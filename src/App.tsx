@@ -33,7 +33,7 @@ export const App: React.FC = () => {
   }, [loadBots, loadProjects, checkSavedKeys]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-indigo-600 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-main)] font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-200">
       {/* Top Navigation & Action Header */}
       <Header />
 

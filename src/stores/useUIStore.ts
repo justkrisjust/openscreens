@@ -23,9 +23,20 @@ interface UIState {
   hideToast: () => void;
 }
 
+const getInitialDarkMode = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  const saved = localStorage.getItem('openscreens_theme');
+  if (saved === 'light') {
+    document.documentElement.classList.remove('dark');
+    return false;
+  }
+  document.documentElement.classList.add('dark');
+  return true;
+};
+
 export const useUIStore = create<UIState>((set) => ({
   activeView: 'office',
-  isDarkMode: true,
+  isDarkMode: getInitialDarkMode(),
   isWipeDataModalOpen: false,
   isNewBotModalOpen: false,
   isNewProjectModalOpen: false,
@@ -39,8 +50,10 @@ export const useUIStore = create<UIState>((set) => ({
       const next = !state.isDarkMode;
       if (next) {
         document.documentElement.classList.add('dark');
+        localStorage.setItem('openscreens_theme', 'dark');
       } else {
         document.documentElement.classList.remove('dark');
+        localStorage.setItem('openscreens_theme', 'light');
       }
       return { isDarkMode: next };
     });

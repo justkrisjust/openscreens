@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { Bot, BotGesture } from '../../services/storage';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { BotFace } from './BotFace';
 
 interface BotWorkAreaProps {
   bot: Bot;
@@ -84,20 +85,12 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
         {/* Top Header: Avatar, Name, Role, Pause Control */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-base shadow-md transition-transform group-hover:scale-105"
-                style={{ backgroundColor: bot.avatarColor }}
-              >
-                {bot.name.slice(0, 2).toUpperCase()}
-              </div>
-
-              {/* Status pulse badge */}
-              <div
-                className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-slate-900 flex items-center justify-center ${currentGesture.bgClass}`}
-              >
-                {currentGesture.icon}
-              </div>
+            <div className="relative pt-3">
+              <BotFace
+                status={bot.status}
+                color={bot.avatarColor}
+                size={48}
+              />
             </div>
 
             <div>
@@ -105,7 +98,7 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
                 <span className="font-bold text-slate-100 text-sm">
                   {bot.name}
                 </span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#1e2025] text-slate-300 border border-[#2e313a]">
                   {bot.role}
                 </span>
               </div>

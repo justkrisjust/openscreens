@@ -75,45 +75,44 @@ export const Header: React.FC = () => {
         <nav className="flex items-center gap-1">
           <button
             onClick={() => setActiveView('office')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
               activeView === 'office'
-                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#1a1c22]'
             }`}
           >
             Office
           </button>
           <button
             onClick={() => setActiveView('bots')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
               activeView === 'bots'
-                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#1a1c22]'
             }`}
           >
             Bots
           </button>
           <button
+            onClick={() => setActiveView('projects')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              activeView === 'projects'
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#1a1c22]'
+            }`}
+          >
+            Projects
+          </button>
+          <button
             onClick={() => setActiveView('compatibility')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
               activeView === 'compatibility'
-                ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#1a1c22]'
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Compatibility</span>
-          </button>
-          <button
-            onClick={() => setActiveView('preview')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-              activeView === 'preview'
-                ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-            }`}
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Live Preview</span>
           </button>
 
           {/* Locked "Coming Soon" Tabs */}

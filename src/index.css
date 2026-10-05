@@ -15,7 +15,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Custom scrollbar for game-like feel */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -34,27 +34,38 @@ body {
   background: var(--text-muted);
 }
 
-/* Pulse working glow */
+/* Pulse working glow in primary green */
 @keyframes working-glow {
   0%, 100% {
-    box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.35);
   }
   50% {
-    box-shadow: 0 0 25px 2px rgba(99, 102, 241, 0.7);
+    box-shadow: 0 0 25px 2px rgba(16, 185, 129, 0.65);
   }
 }
 
 .animate-working-glow {
-  animation: working-glow 2.5s infinite ease-in-out;
+  animation: working-glow 2.2s infinite ease-in-out;
 }
 
-/* Bot Speech Bubble Tail */
+/* Frustrated shake animation for troubled bots */
+@keyframes bot-frustrated-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px) rotate(-2deg); }
+  40%, 80% { transform: translateX(4px) rotate(2deg); }
+}
+
+.animate-frustrated {
+  animation: bot-frustrated-shake 0.6s ease-in-out;
+}
+
+/* Speech bubble tails */
 .bubble-left::after {
   content: '';
   position: absolute;
-  left: -8px;
-  top: 14px;
-  border-width: 6px 8px 6px 0;
+  left: -6px;
+  top: 12px;
+  border-width: 5px 6px 5px 0;
   border-style: solid;
   border-color: transparent var(--border-subtle) transparent transparent;
 }
@@ -62,9 +73,9 @@ body {
 .bubble-right::after {
   content: '';
   position: absolute;
-  right: -8px;
-  top: 14px;
-  border-width: 6px 0 6px 8px;
+  right: -6px;
+  top: 12px;
+  border-width: 5px 0 5px 6px;
   border-style: solid;
   border-color: transparent transparent transparent var(--border-subtle);
 }
