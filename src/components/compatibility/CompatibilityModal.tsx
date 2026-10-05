@@ -83,10 +83,10 @@ export const CompatibilityModal: React.FC = () => {
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-xl font-bold text-slate-100 tracking-tight">
+          <h2 className="text-xl font-bold text-[var(--text-main)] tracking-tight">
             Team Compatibility Suite
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-[var(--text-muted)] mt-1">
             Validates role adherence, memory syntax, lock respect, and 2-bot handshakes before launch.
           </p>
         </div>
@@ -94,7 +94,7 @@ export const CompatibilityModal: React.FC = () => {
         <button
           onClick={handleRunCheck}
           disabled={isRunning || projectBots.length === 0}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50"
         >
           {isRunning ? (
             <>
@@ -111,18 +111,18 @@ export const CompatibilityModal: React.FC = () => {
       </div>
 
       {!report && !isRunning && (
-        <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-          <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-slate-200">
+        <div className="text-center py-16 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-6 shadow-sm">
+          <Users className="w-12 h-12 text-[var(--text-faint)] mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-[var(--text-main)]">
             Ready to Test {projectBots.length} Bots
           </h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto mt-1 mb-5">
+          <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto mt-1 mb-5">
             Runs a lightweight evaluation (~500 tokens per bot) verifying format following,
             file locking rules, and inter-bot coordination.
           </p>
           <button
             onClick={handleRunCheck}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg"
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition-colors"
           >
             Start Pre-Flight Test
           </button>
@@ -134,22 +134,22 @@ export const CompatibilityModal: React.FC = () => {
         <div className="space-y-6 animate-in fade-in duration-300">
           {/* Summary Banner */}
           <div
-            className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+            className={`p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm ${
               report.canStart
-                ? 'bg-emerald-950/30 border-emerald-500/30'
-                : 'bg-rose-950/30 border-rose-500/30'
+                ? 'bg-emerald-500/10 border-emerald-500/30'
+                : 'bg-rose-500/10 border-rose-500/30'
             }`}
           >
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-semibold text-slate-100">
+                <span className="text-sm font-semibold text-[var(--text-main)]">
                   {report.canStart ? 'Team Ready for Coordination' : 'Hard Failure Blocked'}
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-950/80 text-indigo-300 border border-slate-800">
+                <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[var(--bg-card)] text-emerald-600 dark:text-emerald-400 border border-[var(--border-subtle)]">
                   Derived Score: {report.overallScorePercent}%
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[var(--text-muted)]">
                 {report.canStart
                   ? report.hasWarnings
                     ? 'All hard tests passed with minor soft warnings. You can proceed directly or review suggestions below.'
@@ -170,7 +170,7 @@ export const CompatibilityModal: React.FC = () => {
               ) : (
                 <button
                   onClick={() => setActiveView('keys')}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition-colors"
+                  className="px-4 py-2 bg-[var(--bg-card)] hover:bg-[var(--bg-panel)] text-[var(--text-main)] text-xs font-medium rounded-xl border border-[var(--border-subtle)] transition-colors"
                 >
                   Inspect API Keys
                 </button>
@@ -183,18 +183,18 @@ export const CompatibilityModal: React.FC = () => {
             {report.botReports.map((b) => (
               <div
                 key={b.botId}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-5"
+                className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-5 shadow-sm"
               >
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-subtle)]">
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-slate-100 text-sm">
+                    <span className="font-semibold text-[var(--text-main)] text-sm">
                       {b.botName}
                     </span>
-                    <span className="text-xs font-mono text-slate-400">
+                    <span className="text-xs font-mono text-[var(--text-muted)]">
                       ({b.provider} • {b.model})
                     </span>
                   </div>
-                  <span className="text-xs font-mono text-slate-500">
+                  <span className="text-xs font-mono text-[var(--text-faint)]">
                     {b.totalTokensUsed} tokens tested
                   </span>
                 </div>
@@ -203,19 +203,19 @@ export const CompatibilityModal: React.FC = () => {
                   {b.steps.map((s) => (
                     <div
                       key={s.id}
-                      className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                      className="p-3 bg-[var(--bg-panel)] rounded-xl border border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                     >
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5">{getStatusIcon(s.status)}</div>
                         <div>
-                          <div className="text-xs font-semibold text-slate-200">
+                          <div className="text-xs font-semibold text-[var(--text-main)]">
                             {s.name}
                           </div>
-                          <div className="text-[11px] text-slate-400">
+                          <div className="text-[11px] text-[var(--text-muted)]">
                             {s.description}
                           </div>
                           {s.suggestion && (
-                            <div className="text-[11px] text-indigo-300 font-medium mt-1">
+                            <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
                               Suggestion: {s.suggestion}
                             </div>
                           )}
@@ -226,10 +226,10 @@ export const CompatibilityModal: React.FC = () => {
                         <span
                           className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold ${
                             s.status === 'pass'
-                              ? 'bg-emerald-500/10 text-emerald-400'
+                              ? 'bg-emerald-500/10 text-emerald-500'
                               : s.status === 'warn'
-                              ? 'bg-amber-500/10 text-amber-400'
-                              : 'bg-rose-500/10 text-rose-400'
+                              ? 'bg-amber-500/10 text-amber-500'
+                              : 'bg-rose-500/10 text-rose-500'
                           }`}
                         >
                           {s.status}
@@ -243,23 +243,23 @@ export const CompatibilityModal: React.FC = () => {
 
             {/* Handshake Result */}
             {report.handshakeReport && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-indigo-400" />
-                    <span className="font-semibold text-slate-100 text-sm">
+                    <Users className="w-4 h-4 text-emerald-500" />
+                    <span className="font-semibold text-[var(--text-main)] text-sm">
                       2-Bot Handshake ({report.handshakeReport.botA} ➔ {report.handshakeReport.botB})
                     </span>
                   </div>
-                  <span className="text-xs font-mono text-slate-500">
+                  <span className="text-xs font-mono text-[var(--text-faint)]">
                     {report.handshakeReport.tokensUsed} tokens
                   </span>
                 </div>
-                <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80 flex items-center justify-between gap-2">
-                  <span className="text-xs text-slate-300">
+                <div className="p-3 bg-[var(--bg-panel)] rounded-xl border border-[var(--border-subtle)] flex items-center justify-between gap-2">
+                  <span className="text-xs text-[var(--text-main)]">
                     {report.handshakeReport.suggestion}
                   </span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
                     {report.handshakeReport.status.toUpperCase()}
                   </span>
                 </div>

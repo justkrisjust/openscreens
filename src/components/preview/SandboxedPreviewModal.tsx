@@ -55,25 +55,25 @@ export const SandboxedPreviewModal: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 flex flex-col h-[calc(100vh-80px)]">
       {/* Top Preview Controls Bar */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 mb-4 shadow-lg">
+      <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 mb-4 shadow-sm transition-colors duration-200">
         <div className="flex items-center gap-2">
-          <Play className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-          <h2 className="text-xs font-semibold text-slate-100 uppercase tracking-wide font-mono">
+          <Play className="w-4 h-4 text-emerald-500 fill-emerald-500" />
+          <h2 className="text-xs font-semibold text-[var(--text-main)] uppercase tracking-wide font-mono">
             Sandboxed Live Preview
           </h2>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             Isolated Sandbox (No Host Storage Access)
           </span>
         </div>
 
         {/* Device Switcher */}
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-1 bg-[var(--bg-panel)] p-1 rounded-xl border border-[var(--border-subtle)]">
           <button
             onClick={() => setDeviceWidth('desktop')}
             className={`p-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors ${
               deviceWidth === 'desktop'
-                ? 'bg-slate-800 text-white font-medium shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-semibold shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
             }`}
             title="Desktop view"
           >
@@ -84,8 +84,8 @@ export const SandboxedPreviewModal: React.FC = () => {
             onClick={() => setDeviceWidth('tablet')}
             className={`p-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors ${
               deviceWidth === 'tablet'
-                ? 'bg-slate-800 text-white font-medium shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-semibold shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
             }`}
             title="Tablet view (768px)"
           >
@@ -96,8 +96,8 @@ export const SandboxedPreviewModal: React.FC = () => {
             onClick={() => setDeviceWidth('mobile')}
             className={`p-1.5 rounded-lg text-xs flex items-center gap-1 transition-colors ${
               deviceWidth === 'mobile'
-                ? 'bg-slate-800 text-white font-medium shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-[var(--bg-card)] text-[var(--text-main)] font-semibold shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
             }`}
             title="Mobile view (375px)"
           >
@@ -109,7 +109,7 @@ export const SandboxedPreviewModal: React.FC = () => {
         {/* Reload Preview button */}
         <button
           onClick={() => setReloadKey((k) => k + 1)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium border border-slate-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-xl text-xs font-semibold border border-[var(--border-subtle)] transition-colors"
         >
           <RotateCw className="w-3.5 h-3.5" />
           <span>Reload</span>
@@ -117,7 +117,7 @@ export const SandboxedPreviewModal: React.FC = () => {
       </div>
 
       {/* Frame Container */}
-      <div className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-center p-2 overflow-hidden shadow-2xl relative">
+      <div className="flex-1 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-2xl flex items-center justify-center p-2 overflow-hidden shadow-sm relative">
         <div
           className={`h-full ${widthClasses[deviceWidth]} transition-all duration-300 bg-white rounded-xl overflow-hidden shadow-xl`}
         >

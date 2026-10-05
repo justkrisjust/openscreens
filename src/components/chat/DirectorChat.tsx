@@ -43,22 +43,22 @@ export const DirectorChat: React.FC = () => {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-lg">
+    <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-3 shadow-sm transition-colors duration-200">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-indigo-400" />
-          <span className="text-xs font-semibold text-slate-200">
+          <MessageSquare className="w-4 h-4 text-emerald-500" />
+          <span className="text-xs font-semibold text-[var(--text-main)]">
             Director Chat (You are Final Approver)
           </span>
         </div>
 
         {/* Target Selector */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-slate-500 font-mono">Target:</span>
+          <span className="text-[11px] text-[var(--text-muted)] font-mono">Target:</span>
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-[11px] rounded-lg px-2.5 py-1 text-slate-300 focus:outline-none focus:border-indigo-500 font-medium"
+            className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[11px] rounded-lg px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 font-medium"
           >
             <option value="all">Broadcast to All Bots</option>
             {projectBots.map((b) => (
@@ -75,21 +75,21 @@ export const DirectorChat: React.FC = () => {
         <button
           type="button"
           onClick={() => handleQuickDirective('Approved! Looks fantastic, proceed with the next task.')}
-          className="text-[10px] bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap transition-colors flex items-center gap-1"
+          className="text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap transition-colors flex items-center gap-1 font-medium"
         >
           <ThumbsUp className="w-2.5 h-2.5" /> Approve
         </button>
         <button
           type="button"
           onClick={() => handleQuickDirective('Please refine the visual styling and add animations.')}
-          className="text-[10px] bg-slate-950 hover:bg-slate-800 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full whitespace-nowrap transition-colors"
+          className="text-[10px] bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-full whitespace-nowrap transition-colors"
         >
           Polish Design
         </button>
         <button
           type="button"
           onClick={() => handleQuickDirective('Inspect the preview and test for broken buttons.')}
-          className="text-[10px] bg-slate-950 hover:bg-slate-800 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full whitespace-nowrap transition-colors"
+          className="text-[10px] bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-full whitespace-nowrap transition-colors"
         >
           Request Test
         </button>
@@ -105,11 +105,11 @@ export const DirectorChat: React.FC = () => {
           }
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="flex-1 bg-slate-950 border border-slate-800 text-xs rounded-xl px-3 py-2 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+          className="flex-1 bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-emerald-500"
         />
         <button
           type="submit"
-          className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-colors shadow-md shadow-indigo-600/20"
+          className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors shadow-md shadow-emerald-600/20"
           title="Send message"
         >
           <Send className="w-4 h-4" />

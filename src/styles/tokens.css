@@ -3,28 +3,28 @@
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
 
-  /* Theme Surfaces (Day Theme: 90% Neutral Azure White) */
-  --bg-app: #f0f6fa;
+  /* Theme Surfaces (Day Theme: 90% Minimalist Pure White & Neutral Slate) */
+  --bg-app: #f8fafc;
   --bg-card: #ffffff;
-  --bg-panel: #e6f0f7;
-  --bg-elevated: #fcfdfe;
-  --border-subtle: #d6e3ee;
-  --border-strong: #bacddc;
+  --bg-panel: #f1f5f9;
+  --bg-elevated: #ffffff;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
 
   /* Typography Colors */
-  --text-main: #0c1520;
-  --text-muted: #4a5b6d;
-  --text-faint: #7f93a5;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
 
-  /* Primary Accent Token (10% Primary Green) */
+  /* Primary Accent Token (10% Light Green) */
   --accent-primary: #10b981;
   --accent-primary-hover: #059669;
-  --accent-glow: rgba(16, 185, 129, 0.25);
+  --accent-glow: rgba(16, 185, 129, 0.2);
 
   /* Status Tokens */
   --status-working: #10b981;
   --status-thinking: #f59e0b;
-  --status-done: #059669;
+  --status-done: #10b981;
   --status-blocked: #f43f5e;
   --status-needs-help: #f97316;
   --status-waiting: #64748b;
@@ -38,22 +38,22 @@
 
 .dark {
   /* Theme Surfaces (Dark Theme: 90% Neutral Coral Black) */
-  --bg-app: #0d0e10;
-  --bg-card: #131417;
-  --bg-panel: #18191d;
-  --bg-elevated: #1f2025;
-  --border-subtle: #23252b;
-  --border-strong: #31343c;
+  --bg-app: #0d0e11;
+  --bg-card: #131418;
+  --bg-panel: #181a20;
+  --bg-elevated: #1f2128;
+  --border-subtle: #22242c;
+  --border-strong: #2f323e;
 
   /* Typography Colors */
-  --text-main: #f4f5f7;
-  --text-muted: #8b8f9a;
-  --text-faint: #525560;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
 
-  /* Primary Accent Token (10% Primary Green) */
-  --accent-primary: #10b981;
-  --accent-primary-hover: #34d399;
-  --accent-glow: rgba(16, 185, 129, 0.3);
+  /* Primary Accent Token (10% Light Green) */
+  --accent-primary: #22c55e;
+  --accent-primary-hover: #16a34a;
+  --accent-glow: rgba(34, 197, 94, 0.25);
 }
 
 @media (prefers-reduced-motion: reduce) {

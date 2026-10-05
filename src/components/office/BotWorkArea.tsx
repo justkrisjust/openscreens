@@ -34,39 +34,39 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
   > = {
     working: {
       label: 'Working',
-      icon: <Hammer className="w-3.5 h-3.5 animate-bounce text-blue-400" />,
-      colorClass: 'text-blue-400 border-blue-500/30',
-      bgClass: 'bg-blue-500/10',
+      icon: <Hammer className="w-3.5 h-3.5 animate-bounce text-emerald-500" />,
+      colorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+      bgClass: 'bg-emerald-500/10',
     },
     thinking: {
       label: 'Thinking',
-      icon: <Sparkles className="w-3.5 h-3.5 animate-spin text-purple-400" />,
-      colorClass: 'text-purple-400 border-purple-500/30',
-      bgClass: 'bg-purple-500/10',
+      icon: <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-500" />,
+      colorClass: 'text-amber-500 border-amber-500/30',
+      bgClass: 'bg-amber-500/10',
     },
     done: {
       label: 'Done',
-      icon: <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />,
-      colorClass: 'text-emerald-400 border-emerald-500/30',
+      icon: <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />,
+      colorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
       bgClass: 'bg-emerald-500/10',
     },
     blocked: {
       label: 'Blocked',
-      icon: <AlertCircle className="w-3.5 h-3.5 text-rose-400" />,
-      colorClass: 'text-rose-400 border-rose-500/30',
+      icon: <AlertCircle className="w-3.5 h-3.5 text-rose-500" />,
+      colorClass: 'text-rose-500 border-rose-500/30',
       bgClass: 'bg-rose-500/10',
     },
     needs_help: {
       label: 'Needs Help',
-      icon: <HelpCircle className="w-3.5 h-3.5 text-amber-400" />,
-      colorClass: 'text-amber-400 border-amber-500/30',
+      icon: <HelpCircle className="w-3.5 h-3.5 text-amber-500" />,
+      colorClass: 'text-amber-500 border-amber-500/30',
       bgClass: 'bg-amber-500/10',
     },
     waiting: {
       label: 'Waiting',
-      icon: <Coffee className="w-3.5 h-3.5 text-slate-400" />,
-      colorClass: 'text-slate-400 border-slate-700',
-      bgClass: 'bg-slate-800/40',
+      icon: <Coffee className="w-3.5 h-3.5 text-[var(--text-muted)]" />,
+      colorClass: 'text-[var(--text-muted)] border-[var(--border-subtle)]',
+      bgClass: 'bg-[var(--bg-panel)]',
     },
   };
 
@@ -75,10 +75,10 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
 
   return (
     <div
-      className={`bg-slate-900 border rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 ${
+      className={`bg-[var(--bg-card)] border rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 shadow-sm ${
         isCurrentlyWorking
-          ? 'border-indigo-500/50 shadow-lg shadow-indigo-500/10 animate-working-glow'
-          : 'border-slate-800'
+          ? 'border-emerald-500/60 shadow-lg shadow-emerald-500/10 animate-working-glow'
+          : 'border-[var(--border-subtle)]'
       }`}
     >
       <div>
@@ -95,14 +95,14 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-100 text-sm">
+                <span className="font-bold text-[var(--text-main)] text-sm">
                   {bot.name}
                 </span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#1e2025] text-slate-300 border border-[#2e313a]">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-subtle)]">
                   {bot.role}
                 </span>
               </div>
-              <div className="text-[11px] text-slate-400 font-mono mt-0.5 truncate max-w-[150px]">
+              <div className="text-[11px] text-[var(--text-muted)] font-mono mt-0.5 truncate max-w-[150px]">
                 {bot.model}
               </div>
             </div>
@@ -113,12 +113,12 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
             onClick={() => toggleBotPause(bot.id)}
             className={`p-1.5 rounded-xl border text-xs font-medium flex items-center gap-1 transition-colors ${
               isPaused
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700'
+                ? 'bg-amber-500/20 text-amber-500 border-amber-500/30'
+                : 'bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] text-[var(--text-muted)] border-[var(--border-subtle)]'
             }`}
             title={isPaused ? 'Resume bot' : 'Give bot a break'}
           >
-            {isPaused ? <Play className="w-3.5 h-3.5 fill-amber-300" /> : <Pause className="w-3.5 h-3.5" />}
+            {isPaused ? <Play className="w-3.5 h-3.5 fill-amber-400" /> : <Pause className="w-3.5 h-3.5" />}
           </button>
         </div>
 
@@ -132,7 +132,7 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
           </div>
 
           {isPaused && (
-            <span className="text-[11px] text-amber-400 font-mono">
+            <span className="text-[11px] text-amber-500 font-mono">
               (On Break)
             </span>
           )}
@@ -140,13 +140,13 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
 
         {/* Speech / Output Bubble */}
         <div className="relative mb-3">
-          <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 leading-relaxed min-h-[64px] flex flex-col justify-center">
+          <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl p-3 text-xs text-[var(--text-main)] leading-relaxed min-h-[64px] flex flex-col justify-center">
             {lastMessage ? (
               <p className="line-clamp-3 italic">
                 "{lastMessage}"
               </p>
             ) : (
-              <p className="text-slate-500 italic">
+              <p className="text-[var(--text-muted)] italic">
                 Awaiting next task delegation...
               </p>
             )}
@@ -155,31 +155,31 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
       </div>
 
       {/* Live Token Usage Meter */}
-      <div className="pt-3 border-t border-slate-800/70">
-        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+      <div className="pt-3 border-t border-[var(--border-subtle)]">
+        <div className="flex items-center justify-between text-[11px] font-mono text-[var(--text-muted)] mb-1">
           <span className="flex items-center gap-1">
-            <Gauge className="w-3 h-3 text-slate-500" />
+            <Gauge className="w-3 h-3 text-[var(--text-faint)]" />
             Tokens:
           </span>
           <span
             className={
               tokenPercent > 80
-                ? 'text-rose-400 font-bold'
-                : 'text-slate-300 font-semibold'
+                ? 'text-rose-500 font-bold'
+                : 'text-[var(--text-main)] font-semibold'
             }
           >
             {bot.tokenUsage.toLocaleString()} / {bot.tokenCap.toLocaleString()} ({tokenPercent}%)
           </span>
         </div>
 
-        <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+        <div className="w-full h-1.5 bg-[var(--bg-panel)] rounded-full overflow-hidden border border-[var(--border-subtle)]">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
               tokenPercent > 80
                 ? 'bg-rose-500'
                 : tokenPercent > 50
                 ? 'bg-amber-500'
-                : 'bg-indigo-500'
+                : 'bg-emerald-500'
             }`}
             style={{ width: `${tokenPercent}%` }}
           />
