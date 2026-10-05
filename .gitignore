@@ -83,6 +83,7 @@ web_modules/
 *credentials*
 *api_key*
 *apikey*
+!scripts/**
 *.pem
 *.key
 *.cert

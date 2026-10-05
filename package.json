@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
-    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:secrets": "node scripts/verify-integrity.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
