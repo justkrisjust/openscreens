@@ -88,6 +88,16 @@ export const OfficeCanvas: React.FC = () => {
             >
               {activeProject.status.toUpperCase()}
             </span>
+            {projectBots.some((b) => b.provider !== 'mock') ? (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Live Real AI Mode
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                Demo Mode (Zero Cost)
+              </span>
+            )}
           </div>
           <p className="text-xs text-slate-400 mt-0.5 max-w-2xl line-clamp-1">
             <strong>Goal:</strong> {activeProject.goal}

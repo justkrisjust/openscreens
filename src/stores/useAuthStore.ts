@@ -20,7 +20,7 @@ interface AuthState {
   // Actions
   unlockVault: (passphrase: string) => Promise<boolean>;
   lockVault: () => void;
-  setSessionKey: (provider: ProviderId, key: string, persistEncrypted?: boolean) => Promise<void>;
+  setSessionKey: (provider: ProviderId, key: string, persistEncrypted?: boolean, explicitPassphrase?: string) => Promise<void>;
   getKey: (provider: ProviderId) => string | undefined;
   removeKey: (provider: ProviderId) => Promise<void>;
   setProxyUrl: (provider: ProviderId, url: string) => void;
@@ -75,7 +75,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
   },
 
-  setSessionKey: async (provider: ProviderId, key: string, persistEncrypted = false) => {
+  setSessionKey: async (provider: ProviderId, key: string, persistEncrypted = false, explicitPassphrase?: string) => {
     // Always store in memory for session
     set((state) => ({
       sessionKeys: {
@@ -86,11 +86,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // If user requested persistent encrypted storage with passphrase
     if (persistEncrypted && provider !== 'mock') {
-      const currentPassphrase = get().passphrase;
-      if (!currentPassphrase) {
-        throw new Error('Please set or enter your master passphrase to encrypt and save your key.');
+      const activePassphrase = explicitPassphrase || get().passphrase;
+      if (!activePassphrase) {
+        throw new Error('Please enter a master passphrase above to encrypt and save your key.');
       }
-      const encryptedPayload = await encryptData(key, currentPassphrase);
+      if (!get().passphrase) {
+        set({ passphrase: activePassphrase, isUnlocked: true });
+      }
+      const encryptedPayload = await encryptData(key, activePassphrase);
       await saveEncryptedKey({
         provider,
         encryptedPayload,

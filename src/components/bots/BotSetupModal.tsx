@@ -218,6 +218,22 @@ export const BotSetupModal: React.FC = () => {
                 </button>
               ))}
             </div>
+
+            {!getKey(provider) && provider !== 'mock' && (
+              <div className="mt-2.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[11px] text-amber-300 flex items-center justify-between">
+                <span>⚠️ No API key set for {getAdapter(provider).name} yet.</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewBotModalOpen(false);
+                    useUIStore.getState().setActiveView('keys');
+                  }}
+                  className="text-amber-200 underline font-medium hover:text-white"
+                >
+                  Connect Key in Vault
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Dynamic Model Dropdown */}

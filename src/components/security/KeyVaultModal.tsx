@@ -62,7 +62,7 @@ export const KeyVaultModal: React.FC = () => {
     }
 
     try {
-      await setSessionKey(providerId, key, persistEncrypted);
+      await setSessionKey(providerId, key, persistEncrypted, passphraseInput.trim() || undefined);
       if (inputProxies[providerId]) {
         setProxyUrl(providerId, inputProxies[providerId]!);
       }
