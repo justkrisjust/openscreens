@@ -6,6 +6,18 @@ export type ProviderId = 'anthropic' | 'gemini' | 'openai' | 'xai' | 'mistral' |
 export type BotRole = 'leader' | 'developer' | 'designer' | 'tester' | 'reviewer' | 'architect';
 export type BotGesture = 'working' | 'thinking' | 'blocked' | 'needs_help' | 'done' | 'waiting';
 
+export type BotShape =
+  | 'circle'
+  | 'squircle'
+  | 'box'
+  | 'star'
+  | 'hexagon'
+  | 'diamond'
+  | 'shield'
+  | 'capsule'
+  | 'heart'
+  | 'octagon';
+
 export interface Bot {
   id: string;
   name: string;
@@ -15,7 +27,10 @@ export interface Bot {
   personality: string;
   avatarColor: string;
   avatarIcon: string;
+  avatarShape?: BotShape;
   tokenUsage: number;
+  inputTokens?: number;
+  outputTokens?: number;
   tokenCap: number; // e.g. 10000
   status: BotGesture;
   currentTask?: string;

@@ -18,8 +18,10 @@ interface BotState {
   updateBot: (id: string, updates: Partial<Bot>) => Promise<void>;
   removeBot: (id: string) => Promise<void>;
   setBotStatus: (id: string, status: BotGesture) => void;
-  incrementTokens: (id: string, tokens: number) => void;
+  incrementTokens: (id: string, tokens: number, inputTokens?: number, outputTokens?: number) => void;
   resetTokens: (id: string) => void;
+  resetAllTokens: () => void;
+  setTokenCap: (id: string, cap: number) => void;
   setSelectedBotId: (id: string | null) => void;
 }
 
@@ -91,17 +93,38 @@ export const useBotStore = create<BotState>((set, get) => ({
     }));
   },
 
-  incrementTokens: (id, tokens) => {
+  incrementTokens: (id, tokens, inputTokens = 0, outputTokens = 0) => {
     set((state) => ({
       bots: state.bots.map((b) =>
-        b.id === id ? { ...b, tokenUsage: b.tokenUsage + tokens } : b
+        b.id === id
+          ? {
+              ...b,
+              tokenUsage: b.tokenUsage + tokens,
+              inputTokens: (b.inputTokens || 0) + (inputTokens || Math.round(tokens * 0.65)),
+              outputTokens: (b.outputTokens || 0) + (outputTokens || Math.round(tokens * 0.35)),
+            }
+          : b
       ),
     }));
   },
 
   resetTokens: (id) => {
     set((state) => ({
-      bots: state.bots.map((b) => (b.id === id ? { ...b, tokenUsage: 0 } : b)),
+      bots: state.bots.map((b) =>
+        b.id === id ? { ...b, tokenUsage: 0, inputTokens: 0, outputTokens: 0 } : b
+      ),
+    }));
+  },
+
+  resetAllTokens: () => {
+    set((state) => ({
+      bots: state.bots.map((b) => ({ ...b, tokenUsage: 0, inputTokens: 0, outputTokens: 0 })),
+    }));
+  },
+
+  setTokenCap: (id, cap) => {
+    set((state) => ({
+      bots: state.bots.map((b) => (b.id === id ? { ...b, tokenCap: cap } : b)),
     }));
   },
 

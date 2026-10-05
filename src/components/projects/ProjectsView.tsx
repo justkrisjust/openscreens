@@ -12,6 +12,7 @@ import {
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useBotStore } from '../../stores/useBotStore';
 import { useUIStore } from '../../stores/useUIStore';
+import { BotFace } from '../office/BotFace';
 
 export const ProjectsView: React.FC = () => {
   const { projects, activeProject, selectProject, createProject, removeProject } = useProjectStore();
@@ -137,11 +138,14 @@ export const ProjectsView: React.FC = () => {
                           : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
                       }`}
                     >
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: b.avatarColor }}
-                      >
-                        {b.name.slice(0, 2).toUpperCase()}
+                      <div className="shrink-0">
+                        <BotFace
+                          shape={b.avatarShape || 'squircle'}
+                          color={b.avatarColor}
+                          status={b.status}
+                          size={32}
+                          showEmoteBadge={false}
+                        />
                       </div>
                       <div className="truncate">
                         <div className="text-xs font-semibold">{b.name}</div>
@@ -214,15 +218,20 @@ export const ProjectsView: React.FC = () => {
                 {/* Assigned bots avatar stack */}
                 <div className="flex items-center gap-1.5 mb-4">
                   <span className="text-[11px] text-[var(--text-muted)] mr-1 font-mono">Team:</span>
-                  <div className="flex -space-x-1.5 overflow-hidden">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {assignedBots.map((b) => (
                       <div
                         key={b.id}
-                        className="inline-block h-6 w-6 rounded-full ring-2 ring-[var(--bg-card)] text-[10px] font-bold text-white flex items-center justify-center"
-                        style={{ backgroundColor: b.avatarColor }}
+                        className="shrink-0"
                         title={`${b.name} (${b.role})`}
                       >
-                        {b.name.slice(0, 1)}
+                        <BotFace
+                          shape={b.avatarShape || 'squircle'}
+                          color={b.avatarColor}
+                          status={b.status}
+                          size={24}
+                          showEmoteBadge={false}
+                        />
                       </div>
                     ))}
                   </div>

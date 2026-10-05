@@ -437,6 +437,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                     <BotFace
                       status={bot.status}
                       emote={emote}
+                      shape={bot.avatarShape || 'squircle'}
                       color={bot.avatarColor}
                       size={48}
                       isWalking={isExecutingTurn || isSimulatingWalk}

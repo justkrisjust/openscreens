@@ -124,7 +124,12 @@ What is your next action or message to the team?`;
         });
 
         // Track tokens
-        incrementTokens(currentBot.id, response.tokenUsage.totalTokens);
+        incrementTokens(
+          currentBot.id,
+          response.tokenUsage.totalTokens,
+          response.tokenUsage.promptTokens,
+          response.tokenUsage.completionTokens
+        );
         setBotStatus(currentBot.id, response.statusTag);
 
         // Check if output includes MEMORY_WRITE

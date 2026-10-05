@@ -10,6 +10,7 @@ import {
   FolderGit2,
   Sparkles,
   ExternalLink,
+  Coins,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -102,6 +103,17 @@ export const Header: React.FC = () => {
             }`}
           >
             Projects
+          </button>
+          <button
+            onClick={() => setActiveView('tokens')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              activeView === 'tokens'
+                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
+            }`}
+          >
+            <Coins className="w-3.5 h-3.5" />
+            <span>Tokens</span>
           </button>
           <button
             onClick={() => setActiveView('compatibility')}

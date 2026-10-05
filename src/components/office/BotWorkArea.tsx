@@ -88,6 +88,7 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
             <div className="relative pt-3">
               <BotFace
                 status={bot.status}
+                shape={bot.avatarShape || 'squircle'}
                 color={bot.avatarColor}
                 size={48}
               />

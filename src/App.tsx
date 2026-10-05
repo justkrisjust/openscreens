@@ -10,6 +10,7 @@ import { ProjectsView } from './components/projects/ProjectsView';
 import { KeyVaultModal } from './components/security/KeyVaultModal';
 import { CompatibilityModal } from './components/compatibility/CompatibilityModal';
 import { SandboxedPreviewModal } from './components/preview/SandboxedPreviewModal';
+import { TokensView } from './components/tokens/TokensView';
 import { useUIStore } from './stores/useUIStore';
 import { useBotStore } from './stores/useBotStore';
 import { useProjectStore } from './stores/useProjectStore';
@@ -42,6 +43,7 @@ export const App: React.FC = () => {
         {activeView === 'office' && <OfficeCanvas />}
         {activeView === 'bots' && <BotListView />}
         {activeView === 'projects' && <ProjectsView />}
+        {activeView === 'tokens' && <TokensView />}
         {activeView === 'keys' && <KeyVaultModal />}
         {activeView === 'compatibility' && <CompatibilityModal />}
         {activeView === 'preview' && <SandboxedPreviewModal />}
