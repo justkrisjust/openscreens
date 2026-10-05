@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#0f172a"/>
+  <!-- Two screens side by side -->
+  <rect x="8" y="14" width="21" height="32" rx="4" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
+  <rect x="35" y="14" width="21" height="32" rx="4" fill="#1e293b" stroke="#a855f7" stroke-width="2"/>
+  <!-- Shared Bridge in between -->
+  <path d="M29 30H35" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 3"/>
+  <!-- Bot dots -->
+  <circle cx="18.5" cy="24" r="3" fill="#38bdf8"/>
+  <circle cx="45.5" cy="24" r="3" fill="#a855f7"/>
+  <rect x="13" y="32" width="11" height="2" rx="1" fill="#64748b"/>
+  <rect x="40" y="32" width="11" height="2" rx="1" fill="#64748b"/>
+  <rect x="13" y="37" width="8" height="2" rx="1" fill="#64748b"/>
+  <rect x="40" y="37" width="8" height="2" rx="1" fill="#64748b"/>
+  <!-- Bottom base -->
+  <rect x="24" y="50" width="16" height="3" rx="1.5" fill="#475569"/>
+</svg>
