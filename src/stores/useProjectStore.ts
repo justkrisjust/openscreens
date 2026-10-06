@@ -3,6 +3,7 @@ import type {
   Project,
   ProjectEvent,
   VirtualFile,
+  KnowledgeItem,
 } from '../services/storage';
 import {
   addProjectEvent,
@@ -30,9 +31,18 @@ interface ProjectState {
   // Actions
   loadProjects: () => Promise<void>;
   selectProject: (projectId: string) => Promise<void>;
-  createProject: (name: string, goal: string, botIds: string[]) => Promise<Project>;
+  createProject: (
+    name: string,
+    goal: string,
+    botIds: string[],
+    knowledgeBase?: KnowledgeItem[],
+    localFolderPath?: string
+  ) => Promise<Project>;
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
+  addKnowledgeItems: (projectId: string, items: KnowledgeItem[]) => Promise<void>;
+  removeKnowledgeItem: (projectId: string, itemId: string) => Promise<void>;
+  setLocalFolderPath: (projectId: string, path: string) => Promise<void>;
 
   // Virtual Files & Lock Actions
   loadFiles: (projectId: string) => Promise<void>;
@@ -62,6 +72,9 @@ interface ProjectState {
   startProjectExecution: () => void;
   pauseProjectExecution: () => void;
   stopProjectExecution: () => void;
+  addTurns: (count?: number) => void;
+  assignFileToBot: (fileId: string, botId: string, botName: string) => Promise<boolean>;
+  unassignFile: (fileId: string) => Promise<void>;
   toggleBotPause: (botId: string) => void;
   incrementTurn: () => void;
   setIsExecutingTurn: (executing: boolean) => void;
@@ -109,7 +122,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     get().refreshLocks();
   },
 
-  createProject: async (name, goal, botIds) => {
+  createProject: async (name, goal, botIds, knowledgeBase = [], localFolderPath) => {
     const newProject: Project = {
       id: `proj-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       name,
@@ -118,6 +131,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       status: 'idle',
       maxTurns: 20,
       currentTurn: 0,
+      knowledgeBase,
+      localFolderPath,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -176,6 +191,28 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (get().activeProject) {
       await get().loadFiles(get().activeProject!.id);
     }
+  },
+
+  addKnowledgeItems: async (projectId, items) => {
+    const active = get().activeProject;
+    if (!active || active.id !== projectId) return;
+    const currentList = active.knowledgeBase || [];
+    const updatedList = [...currentList, ...items];
+    await get().updateProject(projectId, { knowledgeBase: updatedList });
+  },
+
+  removeKnowledgeItem: async (projectId, itemId) => {
+    const active = get().activeProject;
+    if (!active || active.id !== projectId) return;
+    const currentList = active.knowledgeBase || [];
+    const updatedList = currentList.filter((k) => k.id !== itemId);
+    await get().updateProject(projectId, { knowledgeBase: updatedList });
+  },
+
+  setLocalFolderPath: async (projectId, folderPath) => {
+    const active = get().activeProject;
+    if (!active || active.id !== projectId) return;
+    await get().updateProject(projectId, { localFolderPath: folderPath });
   },
 
   loadFiles: async (projectId: string) => {
@@ -306,7 +343,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   startProjectExecution: () => {
     const active = get().activeProject;
     if (!active) return;
-    get().updateProject(active.id, { status: 'running' });
+    const updates: Partial<Project> = { status: 'running' };
+    if (active.currentTurn >= active.maxTurns) {
+      updates.maxTurns = active.currentTurn + 15;
+    }
+    get().updateProject(active.id, updates);
   },
 
   pauseProjectExecution: () => {
@@ -318,11 +359,78 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   stopProjectExecution: () => {
     const active = get().activeProject;
     if (!active) return;
-    if (active) {
-      lockManager.clearProjectLocks(active.id);
-    }
+    lockManager.clearProjectLocks(active.id);
     get().updateProject(active.id, { status: 'idle' });
     set({ isExecutingTurn: false, activeLocks: {} });
+  },
+
+  addTurns: (count = 10) => {
+    const active = get().activeProject;
+    if (!active) return;
+    get().updateProject(active.id, { maxTurns: active.maxTurns + count });
+  },
+
+  assignFileToBot: async (fileId, botId, botName) => {
+    const active = get().activeProject;
+    if (!active) return false;
+    const file = get().files.find((f) => f.id === fileId);
+    if (!file) return false;
+
+    const lockResult = lockManager.acquireLock(active.id, file.path, botId, botName);
+    if (!lockResult.success) return false;
+
+    const updatedFile: VirtualFile = {
+      ...file,
+      lockedBy: botId,
+      lockAcquiredAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    await saveVirtualFile(updatedFile);
+
+    set((state) => ({
+      files: state.files.map((f) => (f.id === fileId ? updatedFile : f)),
+      activeLocks: lockManager.getProjectLocks(active.id),
+    }));
+
+    await get().logEvent(
+      botId,
+      botName,
+      'file_edit',
+      `${botName} picked up task on ${file.path}`,
+      file.path
+    );
+    return true;
+  },
+
+  unassignFile: async (fileId) => {
+    const active = get().activeProject;
+    if (!active) return;
+    const file = get().files.find((f) => f.id === fileId);
+    if (!file || !file.lockedBy) return;
+
+    const prevBotId = file.lockedBy;
+    lockManager.releaseLock(active.id, file.path, prevBotId);
+
+    const updatedFile: VirtualFile = {
+      ...file,
+      lockedBy: null,
+      lockAcquiredAt: null,
+      updatedAt: Date.now(),
+    };
+    await saveVirtualFile(updatedFile);
+
+    set((state) => ({
+      files: state.files.map((f) => (f.id === fileId ? updatedFile : f)),
+      activeLocks: lockManager.getProjectLocks(active.id),
+    }));
+
+    await get().logEvent(
+      prevBotId,
+      'System',
+      'system',
+      `File ${file.path} released and unassigned`,
+      file.path
+    );
   },
 
   toggleBotPause: (botId: string) => {

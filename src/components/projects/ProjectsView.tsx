@@ -8,11 +8,25 @@ import {
   CheckCircle,
   Clock,
   Sparkles,
+  Folder,
+  FileText,
+  FileCode,
+  File,
+  X,
+  Upload,
+  BookOpen,
+  Loader2,
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useBotStore } from '../../stores/useBotStore';
 import { useUIStore } from '../../stores/useUIStore';
 import { BotFace } from '../office/BotFace';
+import type { KnowledgeItem } from '../../services/storage';
+import {
+  pickLocalDirectory,
+  readUploadedFiles,
+  formatFileSize,
+} from '../../services/knowledgeService';
 
 export const ProjectsView: React.FC = () => {
   const { projects, activeProject, selectProject, createProject, removeProject } = useProjectStore();
@@ -23,6 +37,9 @@ export const ProjectsView: React.FC = () => {
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('');
   const [selectedBotIds, setSelectedBotIds] = useState<string[]>([]);
+  const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
+  const [localFolder, setLocalFolder] = useState<string | null>(null);
+  const [isLoadingFolder, setIsLoadingFolder] = useState(false);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,25 +48,62 @@ export const ProjectsView: React.FC = () => {
       return;
     }
     if (!goal.trim()) {
-      showToast('Project goal required', 'warn');
+      showToast('Shared goal required', 'warn');
       return;
     }
     if (selectedBotIds.length === 0) {
-      showToast('Please select at least 1 bot for this project', 'warn');
+      showToast('Please assign at least one bot to the project', 'warn');
       return;
     }
 
     try {
-      const proj = await createProject(name.trim(), goal.trim(), selectedBotIds);
-      showToast(`Created project "${proj.name}"!`, 'success');
+      await createProject(
+        name.trim(),
+        goal.trim(),
+        selectedBotIds,
+        knowledgeItems,
+        localFolder || undefined
+      );
+      showToast(`Created collaborative project "${name}"!`, 'success');
       setName('');
       setGoal('');
       setSelectedBotIds([]);
+      setKnowledgeItems([]);
+      setLocalFolder(null);
       setIsCreating(false);
-      await selectProject(proj.id);
       setActiveView('office');
     } catch (e: unknown) {
       showToast(String(e), 'error');
+    }
+  };
+
+  const handlePickFolder = async () => {
+    setIsLoadingFolder(true);
+    try {
+      const res = await pickLocalDirectory('temp');
+      setLocalFolder(res.folderPath);
+      setKnowledgeItems((prev) => [...prev, ...res.items]);
+      showToast(`Linked local folder "${res.folderPath}" with ${res.items.length} files!`, 'success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('aborted') && !msg.includes('cancel')) {
+        showToast(msg, 'warn');
+      }
+    } finally {
+      setIsLoadingFolder(false);
+    }
+  };
+
+  const handleUploadFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    try {
+      const items = await readUploadedFiles('temp', e.target.files);
+      setKnowledgeItems((prev) => [...prev, ...items]);
+      showToast(`Added ${items.length} knowledge files!`, 'success');
+    } catch (err) {
+      showToast('Failed to process uploaded files', 'error');
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -60,14 +114,17 @@ export const ProjectsView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div className="max-w-6xl mx-auto py-8 px-4 transition-colors duration-200">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-[var(--text-main)] tracking-tight">
+          <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
             Projects Workspace
+            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              {projects.length} Projects
+            </span>
           </h2>
           <p className="text-xs text-[var(--text-muted)] mt-1">
-            Group your bots to work cooperatively toward shared goals.
+            Group your bots to work cooperatively toward shared goals with shared project knowledge.
           </p>
         </div>
 
@@ -157,6 +214,81 @@ export const ProjectsView: React.FC = () => {
               </div>
             </div>
 
+            {/* Project Knowledge Base & Local Docs */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-[var(--text-main)] flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Project Knowledge Base & Local Docs</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                    (Markdowns, PDFs, Specs, Images)
+                  </span>
+                </label>
+                {localFolder && (
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1">
+                    <Folder className="w-3 h-3" /> Linked: {localFolder}
+                  </span>
+                )}
+              </div>
+
+              <div className="p-3.5 bg-[var(--bg-panel)] rounded-xl border border-[var(--border-subtle)] space-y-3">
+                <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                  Provide reference knowledge for bots to visit so specifications, guidelines, and logic remain consistent across every turn.
+                </p>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handlePickFolder}
+                    disabled={isLoadingFolder}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] text-xs font-semibold rounded-lg border border-[var(--border-subtle)] transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    {isLoadingFolder ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Folder className="w-3.5 h-3.5 text-amber-500" />}
+                    <span>Link Local PC Folder (No 100MB Limit)</span>
+                  </button>
+
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] text-xs font-semibold rounded-lg border border-[var(--border-subtle)] transition-colors cursor-pointer shadow-sm">
+                    <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Upload Docs (.md, .pdf, images)</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept=".md,.txt,.pdf,.json,.png,.jpg,.jpeg,.svg,.ts,.js,.html,.css"
+                      onChange={handleUploadFiles}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {knowledgeItems.length > 0 && (
+                  <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                    {knowledgeItems.map((item, idx) => (
+                      <div
+                        key={item.id || idx}
+                        className="flex items-center justify-between px-2.5 py-1.5 bg-[var(--bg-card)] rounded-lg text-xs font-mono border border-[var(--border-subtle)]"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-panel)] text-[var(--text-muted)] uppercase font-semibold">
+                            {item.type}
+                          </span>
+                          <span className="text-[var(--text-main)] truncate max-w-xs">{item.name}</span>
+                          <span className="text-[var(--text-faint)] text-[10px]">({formatFileSize(item.size)})</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setKnowledgeItems((prev) => prev.filter((_, i) => i !== idx))}
+                          className="text-[var(--text-faint)] hover:text-rose-500 transition-colors p-1"
+                          title="Remove file"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3 pt-3 border-t border-[var(--border-subtle)]">
               <button
                 type="button"
@@ -179,41 +311,59 @@ export const ProjectsView: React.FC = () => {
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.map((proj) => {
-          const isActive = activeProject?.id === proj.id;
           const assignedBots = bots.filter((b) => proj.botIds.includes(b.id));
+          const isActive = activeProject?.id === proj.id;
+          const kbCount = proj.knowledgeBase?.length || 0;
 
           return (
             <div
               key={proj.id}
-              className={`bg-[var(--bg-card)] border rounded-2xl p-5 flex flex-col justify-between transition-all shadow-sm ${
-                isActive ? 'border-emerald-500/50 shadow-md shadow-emerald-500/10' : 'border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
+              className={`bg-[var(--bg-card)] border rounded-2xl p-5 transition-all flex flex-col justify-between shadow-sm ${
+                isActive
+                  ? 'border-emerald-500/60 shadow-md shadow-emerald-500/10'
+                  : 'border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
               }`}
             >
               <div>
-                <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2">
-                    <FolderGit2 className="w-4 h-4 text-emerald-500" />
-                    <h3 className="font-semibold text-[var(--text-main)] text-sm">
-                      {proj.name}
-                    </h3>
+                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                      <FolderGit2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-[var(--text-main)]">{proj.name}</h3>
+                      <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-0.5">
+                        <span className="font-mono">Turns: {proj.currentTurn} / {proj.maxTurns}</span>
+                        <span>•</span>
+                        <span className="capitalize">{proj.status}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
-                      proj.status === 'running'
-                        ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/20'
-                        : proj.status === 'completed'
-                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                        : 'bg-[var(--bg-panel)] text-[var(--text-muted)] border-[var(--border-subtle)]'
-                    }`}
-                  >
-                    {proj.status.toUpperCase()}
-                  </span>
+                  {projects.length > 1 && (
+                    <button
+                      onClick={() => removeProject(proj.id)}
+                      className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 rounded-lg transition-colors"
+                      title="Delete project"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
-                <p className="text-xs text-[var(--text-muted)] line-clamp-2 leading-relaxed mb-4">
+                <p className="text-xs text-[var(--text-muted)] line-clamp-2 leading-relaxed mb-3">
                   {proj.goal}
                 </p>
+
+                {/* Knowledge Base pill if present */}
+                {(kbCount > 0 || proj.localFolderPath) && (
+                  <div className="mb-3 flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                    <BookOpen className="w-3 h-3" />
+                    <span>
+                      {proj.localFolderPath ? `Linked Folder: ${proj.localFolderPath}` : `${kbCount} Knowledge Files`}
+                    </span>
+                  </div>
+                )}
 
                 {/* Assigned bots avatar stack */}
                 <div className="flex items-center gap-1.5 mb-4">
@@ -247,17 +397,12 @@ export const ProjectsView: React.FC = () => {
                   className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
                 >
                   <Play className="w-3 h-3 fill-current" />
-                  <span>Open in Office</span>
+                  <span>{isActive ? 'View in Office' : 'Open in Office'}</span>
                 </button>
-
-                {projects.length > 1 && (
-                  <button
-                    onClick={() => removeProject(proj.id)}
-                    className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 transition-colors"
-                    title="Delete project"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                {isActive && (
+                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active
+                  </span>
                 )}
               </div>
             </div>

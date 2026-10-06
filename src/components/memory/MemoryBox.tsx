@@ -17,6 +17,7 @@ import JSZip from 'jszip';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useBotStore } from '../../stores/useBotStore';
 import { useUIStore } from '../../stores/useUIStore';
 
 export const MemoryBox: React.FC = () => {
@@ -27,9 +28,13 @@ export const MemoryBox: React.FC = () => {
     createVirtualFile,
     updateVirtualFileContent,
     deleteVirtualFileById,
+    assignFileToBot,
+    unassignFile,
     activeLocks,
     activeProject,
   } = useProjectStore();
+
+  const { bots } = useBotStore();
 
   const { setActiveView, showToast } = useUIStore();
 
@@ -207,12 +212,47 @@ export const MemoryBox: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="font-mono text-[var(--text-main)] font-semibold">{activeFile.path}</span>
               {activeLocks[activeFile.path.toLowerCase()] ? (
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1 font-mono">
-                  <Lock className="w-2.5 h-2.5" />
-                  Locked by {activeLocks[activeFile.path.toLowerCase()].botName}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1 font-mono">
+                    <Lock className="w-2.5 h-2.5" />
+                    Locked: {activeLocks[activeFile.path.toLowerCase()].botName}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      await unassignFile(activeFile.id);
+                      showToast(`Unassigned ${activeFile.path}`, 'info');
+                    }}
+                    className="text-[10px] text-rose-500 hover:underline font-mono"
+                    title="Release lock and relieve bot"
+                  >
+                    (Release)
+                  </button>
+                </div>
               ) : (
-                <span className="text-[10px] text-[var(--text-faint)] font-mono">Unlocked</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-[var(--text-muted)] font-mono">Assign to:</span>
+                  <select
+                    value=""
+                    onChange={async (e) => {
+                      const botId = e.target.value;
+                      if (botId) {
+                        const targetBot = bots.find((b) => b.id === botId);
+                        if (targetBot) {
+                          await assignFileToBot(activeFile.id, targetBot.id, targetBot.name);
+                          showToast(`Assigned ${activeFile.path} to ${targetBot.name}!`, 'success');
+                        }
+                      }
+                    }}
+                    className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] rounded px-1.5 py-0.5 text-[var(--text-main)] font-mono focus:border-emerald-500"
+                  >
+                    <option value="">Choose bot...</option>
+                    {bots.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} ({b.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
             </div>
 

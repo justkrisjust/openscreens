@@ -301,7 +301,7 @@ export const KeyVaultModal: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleTestConnection(adapter.id)}
-                      disabled={isTesting || (!hasKey && !inputKeys[adapter.id])}
+                      disabled={isTesting || (adapter.id !== 'ollama' && !hasKey && !inputKeys[adapter.id])}
                       className="px-3 py-2.5 text-xs font-medium bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-xl border border-[var(--border-subtle)] transition-colors disabled:opacity-40"
                     >
                       {isTesting ? 'Testing...' : 'Test'}
@@ -309,11 +309,13 @@ export const KeyVaultModal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Optional Custom Proxy URL (for OpenAI, xAI, Mistral) */}
+                {/* Optional Custom Proxy / Local Endpoint URL */}
                 {adapter.capabilities.supportsCustomProxy && (
                   <div className="mt-2.5 pt-2.5 border-t border-[var(--border-subtle)]">
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-[var(--text-muted)] font-mono">Custom Proxy:</span>
+                      <span className="text-[11px] text-[var(--text-muted)] font-mono">
+                        {adapter.id === 'ollama' ? 'Local URL:' : 'Custom Proxy:'}
+                      </span>
                       <input
                         type="text"
                         placeholder={adapter.defaultBaseUrl}

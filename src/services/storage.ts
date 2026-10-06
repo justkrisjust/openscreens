@@ -1,7 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { EncryptedPayload } from './crypto';
 
-export type ProviderId = 'anthropic' | 'gemini' | 'openai' | 'xai' | 'mistral' | 'mock';
+export type ProviderId = 'anthropic' | 'gemini' | 'openai' | 'xai' | 'mistral' | 'mock' | 'ollama';
 
 export type BotRole = 'leader' | 'developer' | 'designer' | 'tester' | 'reviewer' | 'architect';
 export type BotGesture = 'working' | 'thinking' | 'blocked' | 'needs_help' | 'done' | 'waiting';
@@ -59,6 +59,18 @@ export interface ProjectEvent {
   timestamp: number;
 }
 
+export interface KnowledgeItem {
+  id: string;
+  projectId: string;
+  name: string;
+  type: 'markdown' | 'text' | 'pdf' | 'image' | 'json' | 'code' | 'folder';
+  size: number;
+  path?: string;
+  content?: string;
+  dataUrl?: string;
+  updatedAt: number;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -67,6 +79,8 @@ export interface Project {
   status: 'idle' | 'running' | 'paused' | 'completed';
   maxTurns: number; // stop bot-to-bot looping
   currentTurn: number;
+  knowledgeBase?: KnowledgeItem[];
+  localFolderPath?: string;
   createdAt: number;
   updatedAt: number;
 }

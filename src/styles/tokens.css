@@ -1,7 +1,8 @@
 :root {
   /* Design Tokens — 90% Azure White (Light) & Coral Black (Dark), 10% Primary Green */
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
   /* Theme Surfaces (Day Theme: 90% Minimalist Pure White & Neutral Slate) */
   --bg-app: #f8fafc;

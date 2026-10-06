@@ -23,6 +23,7 @@ export const OfficeCanvas: React.FC = () => {
     activeLocks,
     isExecutingTurn,
     events,
+    addTurns,
   } = useProjectStore();
 
   const { bots } = useBotStore();
@@ -102,13 +103,25 @@ export const OfficeCanvas: React.FC = () => {
         </div>
 
         {/* Turn Meter & Action Controls */}
-        <div className="flex items-center gap-3">
-          {/* Turn counter meter */}
-          <div className="bg-[var(--bg-panel)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] text-xs font-mono flex items-center gap-2">
-            <span className="text-[var(--text-muted)]">Turns:</span>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Turn counter meter with +10 Turns extension and explanation tooltip */}
+          <div className="bg-[var(--bg-panel)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] text-xs font-mono flex items-center gap-2 shadow-sm">
+            <span
+              className="text-[var(--text-muted)] cursor-help flex items-center gap-1"
+              title="A 'Turn' is one round where a bot reads files, writes code, or reviews. Turn limit prevents infinite loops and protects your API budget."
+            >
+              Turns:
+            </span>
             <span className="font-bold text-[var(--text-main)]">
               {activeProject.currentTurn} / {activeProject.maxTurns}
             </span>
+            <button
+              onClick={() => addTurns(10)}
+              className="ml-1 px-1.5 py-0.5 text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-md transition-colors"
+              title="Add 10 more turns to milestone limit"
+            >
+              +10
+            </button>
           </div>
 
           {/* Start / Pause / Stop buttons */}
@@ -117,6 +130,7 @@ export const OfficeCanvas: React.FC = () => {
               <button
                 onClick={pauseProjectExecution}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-semibold shadow-md transition-colors"
+                title="Pause office turn execution"
               >
                 <Pause className="w-3.5 h-3.5" />
                 <span>Pause</span>
@@ -125,6 +139,7 @@ export const OfficeCanvas: React.FC = () => {
               <button
                 onClick={startProjectExecution}
                 className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/30 transition-all"
+                title="Wake up bots and resume project execution"
               >
                 <Play className="w-3.5 h-3.5 fill-white" />
                 <span>{activeProject.currentTurn > 0 ? 'Resume' : 'Start'}</span>
@@ -133,8 +148,8 @@ export const OfficeCanvas: React.FC = () => {
 
             <button
               onClick={stopProjectExecution}
-              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-[#1a1c22] rounded-xl transition-colors border border-transparent hover:border-[#2e313a]"
-              title="Global Stop (reset turns and release locks)"
+              className="p-2 text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors border border-[var(--border-subtle)] hover:border-rose-500/30"
+              title="Stop project & put all bots to sleep"
             >
               <Square className="w-3.5 h-3.5 fill-current" />
             </button>
@@ -142,9 +157,9 @@ export const OfficeCanvas: React.FC = () => {
         </div>
       </div>
 
-      {/* Visual Representation: Animated Virtual Office Floor with Roaming Bots & Expressive Faces */}
+      {/* Visual Representation: Animated Virtual Office Floor with ALL bots visible */}
       <VirtualOfficeFloor
-        bots={projectBots}
+        bots={bots}
         activeLocks={activeLocks}
         isExecutingTurn={isExecutingTurn}
       />

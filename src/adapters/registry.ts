@@ -4,6 +4,7 @@ import { geminiAdapter } from './gemini';
 import { mistralAdapter } from './mistral';
 import { mockAdapter } from './mock';
 import { openaiAdapter } from './openai';
+import { ollamaAdapter } from './ollama';
 import type { ProviderAdapter } from './types';
 import { xaiAdapter } from './xai';
 
@@ -13,6 +14,7 @@ const ADAPTERS: Record<ProviderId, ProviderAdapter> = {
   openai: openaiAdapter,
   xai: xaiAdapter,
   mistral: mistralAdapter,
+  ollama: ollamaAdapter,
   mock: mockAdapter,
 };
 
@@ -29,5 +31,5 @@ export function getAllAdapters(): ProviderAdapter[] {
 }
 
 export function getRealProviderAdapters(): ProviderAdapter[] {
-  return [geminiAdapter, anthropicAdapter, openaiAdapter, xaiAdapter, mistralAdapter];
+  return [geminiAdapter, anthropicAdapter, openaiAdapter, ollamaAdapter, xaiAdapter, mistralAdapter];
 }

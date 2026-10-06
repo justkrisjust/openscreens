@@ -22,10 +22,23 @@ import {
   Laptop,
   Palette,
   Terminal,
+  Tv,
+  Gamepad2,
+  Droplet,
+  BookOpen,
+  Hammer,
+  Bomb,
+  HardHat,
+  Moon,
+  Sun,
+  Shield,
+  Layers,
 } from 'lucide-react';
-import type { Bot } from '../../services/storage';
+import type { Bot, VirtualFile } from '../../services/storage';
 import { BotFace, type BotEmoteType } from './BotFace';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { useUIStore } from '../../stores/useUIStore';
+import { formatFileSize } from '../../services/knowledgeService';
 
 interface VirtualOfficeFloorProps {
   bots: Bot[];
@@ -33,47 +46,220 @@ interface VirtualOfficeFloorProps {
   isExecutingTurn: boolean;
 }
 
-// Fixed Station Coordinates (percentages relative to the 1200x700 virtual canvas)
-const STATIONS = {
-  coffeeLounge: { x: 18, y: 24, name: 'Coffee Lounge', desc: 'Break & Refresh Station' },
-  wallWhiteboard: { x: 50, y: 15, name: 'Project Whiteboard', desc: 'Live Built App Monitor' },
-  designStudio: { x: 82, y: 24, name: 'Design Studio', desc: 'UI & Styling Station' },
-  memoryVault: { x: 50, y: 50, name: 'Memory Box Vault', desc: 'Shared Virtual File Repository' },
-  leadDesk: { x: 22, y: 76, name: 'Desk A: Lead Architect', desc: 'Project Leadership & Architecture' },
-  devDesk: { x: 78, y: 76, name: 'Desk B: Dev Station', desc: 'Engineering & Logic' },
+// 5 Leisure Activity Zones on the RIGHT SIDE
+export type LeisureActivity = 'coffee' | 'arcade' | 'tv' | 'water_cooler' | 'library';
+
+interface LeisureZone {
+  id: LeisureActivity;
+  name: string;
+  icon: React.ReactNode;
+  x: number; // percentage (60% to 94%)
+  y: number; // percentage (15% to 80%)
+  desc: string;
+  emote: BotEmoteType;
+}
+
+const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
+  coffee: {
+    id: 'coffee',
+    name: 'Coffee Barista Lounge',
+    icon: <Coffee className="w-4 h-4 text-amber-500" />,
+    x: 65,
+    y: 22,
+    desc: 'Sipping fresh espresso & recharging',
+    emote: 'coffee',
+  },
+  arcade: {
+    id: 'arcade',
+    name: '8-Bit Arcade & Playground',
+    icon: <Gamepad2 className="w-4 h-4 text-violet-400" />,
+    x: 88,
+    y: 22,
+    desc: 'Playing retro games & testing reflexes',
+    emote: 'stars',
+  },
+  tv: {
+    id: 'tv',
+    name: 'Chill TV & Media Lounge',
+    icon: <Tv className="w-4 h-4 text-cyan-400" />,
+    x: 88,
+    y: 68,
+    desc: 'Watching streams & relaxing on couch',
+    emote: 'normal',
+  },
+  water_cooler: {
+    id: 'water_cooler',
+    name: 'Water Cooler Chat Hub',
+    icon: <Droplet className="w-4 h-4 text-blue-400" />,
+    x: 65,
+    y: 70,
+    desc: 'Gossiping & sharing multi-model notes',
+    emote: 'normal',
+  },
+  library: {
+    id: 'library',
+    name: 'Reading Nook & Knowledge Vault',
+    icon: <BookOpen className="w-4 h-4 text-emerald-400" />,
+    x: 76,
+    y: 46,
+    desc: 'Reading project specs & brand docs',
+    emote: 'question',
+  },
 };
+
+// 4 Cabin Workstation Slots on the LEFT SIDE
+const CABIN_SLOTS = [
+  { id: 0, x: 16, y: 24, name: 'Studio Pod Alpha' },
+  { id: 1, x: 33, y: 24, name: 'Studio Pod Beta' },
+  { id: 2, x: 16, y: 64, name: 'Studio Pod Gamma' },
+  { id: 3, x: 33, y: 64, name: 'Studio Pod Delta' },
+];
 
 export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   bots,
   activeLocks,
   isExecutingTurn,
 }) => {
-  const { files, selectFile } = useProjectStore();
+  const {
+    files,
+    activeProject,
+    selectFile,
+    assignFileToBot,
+    unassignFile,
+  } = useProjectStore();
+  const { showToast, setActiveView } = useUIStore();
+
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [showWallMonitorModal, setShowWallMonitorModal] = useState(false);
+  const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
 
-  // Canvas Pan & Zoom Controls
+  // Canvas Pan & Zoom
   const [canvasScale, setCanvasScale] = useState(1);
   const [canvasPan, setCanvasPan] = useState({ x: 0, y: 0 });
-  const [isSimulatingWalk, setIsSimulatingWalk] = useState(false);
-  const [walkPhase, setWalkPhase] = useState<'idle' | 'to_box' | 'to_desk'>('idle');
 
-  // Trigger choreographed file pickup when turn is executing or simulated
+  // Passive Ambient Movement: Map of botId -> LeisureActivity
+  const [botLeisureSpots, setBotLeisureSpots] = useState<Record<string, LeisureActivity>>({});
+
+  // Dynamic Office Cabins: Map of botId -> { cabinSlotIndex: number, file: VirtualFile }
+  const [builtCabins, setBuiltCabins] = useState<Record<string, { slot: number; file: VirtualFile }>>({});
+
+  // Animation States for Bob (Creator Bot) and Rex (Destroyer Bot)
+  const [creatorBotState, setCreatorBotState] = useState<{ active: boolean; targetBotName: string; targetSlot: number } | null>(null);
+  const [destroyerBotState, setDestroyerBotState] = useState<{ active: boolean; targetBotName: string; targetSlot: number } | null>(null);
+
+  // Is project stopped / asleep?
+  const isProjectStopped = activeProject?.status === 'idle';
+
+  // Synchronize cabins with currently locked/assigned files
   useEffect(() => {
-    if (isExecutingTurn || isSimulatingWalk) {
-      // Phase 1: Walk to vault to claim file
-      setWalkPhase('to_box');
-      const timer1 = setTimeout(() => {
-        // Phase 2: Walk with file to desk
-        setWalkPhase('to_desk');
-      }, 1600);
-      return () => clearTimeout(timer1);
-    } else {
-      setWalkPhase('idle');
-    }
-  }, [isExecutingTurn, isSimulatingWalk]);
+    const lockedFiles = files.filter((f) => Boolean(f.lockedBy));
+    const nextCabins: Record<string, { slot: number; file: VirtualFile }> = {};
 
-  // Compile mini preview HTML for the whiteboard monitor
+    lockedFiles.forEach((file, index) => {
+      if (file.lockedBy) {
+        nextCabins[file.lockedBy] = {
+          slot: index % CABIN_SLOTS.length,
+          file,
+        };
+      }
+    });
+
+    setBuiltCabins(nextCabins);
+  }, [files]);
+
+  // Passive ambient wandering: every 6 seconds, pick a free untasked bot and wander to a new zone
+  useEffect(() => {
+    if (isProjectStopped) return;
+
+    const interval = setInterval(() => {
+      const untaskedBots = bots.filter((b) => !builtCabins[b.id] && b.status !== 'working');
+      if (untaskedBots.length === 0) return;
+
+      const randomBot = untaskedBots[Math.floor(Math.random() * untaskedBots.length)];
+      const activities: LeisureActivity[] = ['coffee', 'arcade', 'tv', 'water_cooler', 'library'];
+      const nextActivity = activities[Math.floor(Math.random() * activities.length)];
+
+      setBotLeisureSpots((prev) => ({
+        ...prev,
+        [randomBot.id]: nextActivity,
+      }));
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [bots, builtCabins, isProjectStopped]);
+
+  // Trigger Creator Bot ("Bob") Animation
+  const triggerCreatorBot = (targetBot: Bot, slotIndex: number) => {
+    setCreatorBotState({ active: true, targetBotName: targetBot.name, targetSlot: slotIndex });
+    setTimeout(() => {
+      setCreatorBotState(null);
+    }, 2400);
+  };
+
+  // Trigger Destroyer Bot ("Rex") Animation
+  const triggerDestroyerBot = (targetBotName: string, slotIndex: number) => {
+    setDestroyerBotState({ active: true, targetBotName, targetSlot: slotIndex });
+    setTimeout(() => {
+      setDestroyerBotState(null);
+    }, 2400);
+  };
+
+  // User handles assigning a file to a bot from the office canvas
+  const handleAssignTask = async (fileId: string, botId: string) => {
+    const targetBot = bots.find((b) => b.id === botId);
+    if (!targetBot) return;
+
+    const slotIndex = Object.keys(builtCabins).length % CABIN_SLOTS.length;
+    triggerCreatorBot(targetBot, slotIndex);
+
+    const success = await assignFileToBot(fileId, targetBot.id, targetBot.name);
+    if (success) {
+      showToast(`👷 Bob built a studio for ${targetBot.name} to work on file!`, 'success');
+    }
+  };
+
+  // User handles relieving / unassigning a file
+  const handleUnassignTask = async (fileId: string) => {
+    const file = files.find((f) => f.id === fileId);
+    if (!file || !file.lockedBy) return;
+
+    const botId = file.lockedBy;
+    const targetBot = bots.find((b) => b.id === botId);
+    const botName = targetBot?.name || 'Bot';
+    const slotIndex = builtCabins[botId]?.slot ?? 0;
+
+    triggerDestroyerBot(botName, slotIndex);
+    await unassignFile(fileId);
+    showToast(`🚜 Rex demolished the studio! ${botName} is free to relax in lounge.`, 'info');
+  };
+
+  // Compute position for each bot on the floor
+  const getBotPosition = (bot: Bot, index: number) => {
+    const cabin = builtCabins[bot.id];
+
+    // If bot has an assigned cabin on the LEFT SIDE
+    if (cabin) {
+      const slot = CABIN_SLOTS[cabin.slot] || CABIN_SLOTS[0];
+      return { x: slot.x + 3, y: slot.y + 2 };
+    }
+
+    // Untasked free bots hang out on the RIGHT SIDE
+    const currentActivity = botLeisureSpots[bot.id] || (
+      index % 5 === 0 ? 'coffee' :
+      index % 5 === 1 ? 'arcade' :
+      index % 5 === 2 ? 'tv' :
+      index % 5 === 3 ? 'water_cooler' : 'library'
+    );
+
+    const zone = LEISURE_ZONES[currentActivity];
+    // Slightly offset bots so they don't overlap in the same activity zone
+    const offsetX = ((index % 3) - 1) * 3.5;
+    const offsetY = Math.floor(index / 3) * 3;
+
+    return { x: zone.x + offsetX, y: zone.y + offsetY };
+  };
+
+  // Mini preview HTML for the whiteboard monitor
   const bundledHtml = useMemo(() => {
     const htmlFile = files.find((f) => f.path.toLowerCase().endsWith('.html')) || files.find((f) => f.path.toLowerCase() === 'index.html');
     const cssFile = files.find((f) => f.path.toLowerCase().endsWith('.css'));
@@ -90,440 +276,592 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     return htmlContent;
   }, [files]);
 
-  // Compute position for each bot based on physical workflow
-  const getBotPosition = (bot: Bot, index: number) => {
-    const isWorking = bot.status === 'working';
-    const isTroubled = bot.status === 'blocked' || bot.status === 'needs_help';
-    const isWaiting = bot.status === 'waiting';
-
-    // When actively walking to fetch file from vault
-    if ((isWorking || isSimulatingWalk) && walkPhase === 'to_box') {
-      return { x: 44 + (index % 3) * 6, y: 44 };
-    }
-
-    // When working or carrying file at desk
-    if (isWorking || ((isWorking || isSimulatingWalk) && walkPhase === 'to_desk')) {
-      if (bot.role === 'leader') return { x: STATIONS.leadDesk.x, y: STATIONS.leadDesk.y - 4 };
-      if (bot.role === 'designer') return { x: STATIONS.designStudio.x, y: STATIONS.designStudio.y + 4 };
-      return { x: STATIONS.devDesk.x, y: STATIONS.devDesk.y - 4 };
-    }
-
-    // If blocked because file is locked, standing near vault looking troubled
-    if (isTroubled) {
-      return index === 0 ? { x: 38, y: 50 } : { x: 62, y: 50 };
-    }
-
-    // If waiting or on break, relaxing at Coffee Lounge
-    if (isWaiting) {
-      return { x: STATIONS.coffeeLounge.x - 3 + index * 6, y: STATIONS.coffeeLounge.y + 5 };
-    }
-
-    // Default home stations
-    if (bot.role === 'leader') return STATIONS.leadDesk;
-    if (bot.role === 'designer') return STATIONS.designStudio;
-    if (index === 1) return STATIONS.devDesk;
-    return { x: 34 + index * 12, y: 76 };
-  };
-
-  // Find file carried by this bot
-  const getCarriedFileForBot = (botId: string, botStatus: string) => {
-    // Check if active locks has this bot
-    for (const [filePath, lock] of Object.entries(activeLocks)) {
-      if (lock.botId === botId) {
-        return filePath;
-      }
-    }
-    // If bot is currently working, carry the first virtual file as visual simulation
-    if (botStatus === 'working' && files.length > 0) {
-      return files[0].path;
-    }
-    if (isSimulatingWalk && walkPhase === 'to_desk' && files.length > 0) {
-      return files[0].path;
-    }
-    return null;
-  };
-
-  // Emote expression calculation
-  const getBotEmote = (bot: Bot): BotEmoteType => {
-    if (bot.status === 'blocked') return 'frustrated';
-    if (bot.status === 'needs_help') return 'steam';
-    if (bot.status === 'thinking') return 'question';
-    if (bot.status === 'done') return 'stars';
-    if (bot.status === 'waiting') return 'coffee';
-    return 'lightbulb';
-  };
-
-  const lockedFilesList = Object.keys(activeLocks);
-
-  const resetView = () => {
-    setCanvasPan({ x: 0, y: 0 });
-    setCanvasScale(1);
-  };
-
   return (
-    <div className="relative bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-4 overflow-hidden shadow-sm min-h-[460px] select-none transition-colors duration-200 flex flex-col">
-      {/* Office Floor Perimeter Top Bar */}
-      <div className="relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <div>
-            <span className="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider font-mono">
-              OpenScreens Interactive Office Floor
-            </span>
-            <span className="text-[11px] text-[var(--text-muted)] ml-2 hidden sm:inline">
-              (Interactive Canvas: Drag to pan • Watch bots fetch & carry files)
-            </span>
+    <div className="relative w-full rounded-2xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-lg mb-6 select-none transition-colors duration-200">
+      {/* Top Floor Header & Canvas Toolbar */}
+      <div className="px-4 py-2.5 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center justify-between text-xs font-mono">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-bold text-[var(--text-main)]">Virtual Simulation Floor</span>
           </div>
+          <span className="text-[10px] text-[var(--text-muted)] hidden sm:inline">
+            (Left: Work Cabins • Center: Vault • Right: 5 Leisure Activities)
+          </span>
         </div>
 
-        {/* Canvas Navigation Toolbar */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Simulated File Action button */}
+        {/* Action & Zoom Controls */}
+        <div className="flex items-center gap-1.5">
+          {activeProject?.knowledgeBase && activeProject.knowledgeBase.length > 0 && (
+            <button
+              onClick={() => setShowKnowledgeModal(true)}
+              className="flex items-center gap-1 px-2.5 py-1 text-[11px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg transition-colors"
+              title="Inspect Project Knowledge Base"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Knowledge ({activeProject.knowledgeBase.length})</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
-              setIsSimulatingWalk(true);
-              setTimeout(() => setIsSimulatingWalk(false), 4000);
+              const freeBot = bots.find((b) => !builtCabins[b.id]);
+              const unassignedFile = files.find((f) => !f.lockedBy) || files[0];
+              if (freeBot && unassignedFile) {
+                handleAssignTask(unassignedFile.id, freeBot.id);
+              } else {
+                showToast('All bots already have cabins or no files available!', 'info');
+              }
             }}
-            className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold transition-all shadow-sm"
-            title="Trigger bot walking animation to vault & carrying file to desk"
+            className="flex items-center gap-1 px-2.5 py-1 text-[11px] bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors shadow-sm font-semibold"
+            title="Simulate Bob building a cabin & assigning a file"
           >
-            <Play className="w-3 h-3 fill-current" />
-            <span>Simulate File Fetch</span>
+            <Hammer className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Build Cabin (Bob)</span>
           </button>
 
-          {/* Zoom In */}
+          <div className="h-4 w-px bg-[var(--border-subtle)] mx-1" />
+
           <button
             onClick={() => setCanvasScale((s) => Math.min(1.4, s + 0.1))}
-            className="p-1.5 rounded-xl bg-[var(--bg-panel)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] transition-colors"
+            className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
             title="Zoom In"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
-
-          {/* Zoom Out */}
           <button
-            onClick={() => setCanvasScale((s) => Math.max(0.75, s - 0.1))}
-            className="p-1.5 rounded-xl bg-[var(--bg-panel)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] transition-colors"
+            onClick={() => setCanvasScale((s) => Math.max(0.7, s - 0.1))}
+            className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
             title="Zoom Out"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
-
-          {/* Reset Pan/Zoom */}
           <button
-            onClick={resetView}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[var(--bg-panel)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-xs font-medium transition-colors"
+            onClick={() => {
+              setCanvasScale(1);
+              setCanvasPan({ x: 0, y: 0 });
+            }}
+            className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
             title="Reset Pan & Zoom"
           >
-            <RotateCcw className="w-3 h-3" />
-            <span className="hidden md:inline text-[11px]">Center</span>
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
-
-          {/* Lock status pill */}
-          {lockedFilesList.length > 0 && (
-            <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/30 flex items-center gap-1 animate-pulse">
-              <Lock className="w-3 h-3" />
-              Locked: {lockedFilesList.join(', ')}
-            </span>
-          )}
         </div>
       </div>
 
-      {/* The Draggable Office Canvas Viewport */}
-      <div className="relative flex-1 w-full h-[400px] rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] overflow-hidden cursor-grab active:cursor-grabbing shadow-inner">
-        {/* Helper Hint Badge */}
-        <div className="absolute bottom-2 left-3 z-30 pointer-events-none flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg-card)]/90 border border-[var(--border-subtle)] shadow-sm text-[10px] font-mono text-[var(--text-muted)] backdrop-blur-sm">
-          <Move className="w-3 h-3 text-emerald-500" />
-          <span>Click & Drag to pan canvas</span>
-        </div>
-
-        {/* Inner Draggable Stage */}
+      {/* Draggable & Pannable Interactive Canvas Viewport */}
+      <div className="relative w-full h-[580px] overflow-hidden cursor-grab active:cursor-grabbing bg-[var(--bg-app)]">
         <motion.div
           drag
-          dragMomentum={false}
           dragElastic={0.08}
-          animate={{ scale: canvasScale }}
-          transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-          style={{ x: canvasPan.x, y: canvasPan.y }}
-          className="relative w-full h-full min-w-[900px] min-h-[400px] origin-center"
+          dragConstraints={{ left: -300, right: 300, top: -200, bottom: 200 }}
+          style={{ scale: canvasScale, x: canvasPan.x, y: canvasPan.y }}
+          className="relative w-[1200px] h-[680px] mx-auto origin-center transition-transform"
         >
-          {/* Minimalist Floor Grid Texture */}
-          <div
-            className="absolute inset-0 opacity-[0.06] dark:opacity-[0.03] pointer-events-none"
-            style={{
-              backgroundImage: `radial-gradient(#10b981 1.2px, transparent 1.2px)`,
-              backgroundSize: '24px 24px',
-            }}
-          />
+          {/* Floor Isometric Grid Blueprint */}
+          <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06] bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px]" />
 
-          {/* Visual Office Floor Zones / Floorplan Outlines */}
+          {/* Center Dividing Walkway */}
+          <div className="absolute top-0 bottom-0 left-[48%] w-12 border-x border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/30 flex items-center justify-center pointer-events-none">
+            <span className="text-[10px] uppercase font-mono tracking-widest text-[var(--text-faint)] rotate-90 whitespace-nowrap">
+              Central Office Concourse
+            </span>
+          </div>
 
-          {/* 1. TOP CENTER: Wall Whiteboard Monitor (Live Built Code Preview) */}
+          {/* ============================================================ */}
+          {/* LEFT SIDE: DYNAMIC WORK CABINS & PRODUCTION STUDIOS          */}
+          {/* ============================================================ */}
+          <div className="absolute top-4 left-4 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-1.5">
+            <Laptop className="w-4 h-4 text-emerald-500" />
+            <span>WORK STUDIOS & CABINS (DYNAMICALLY BUILT)</span>
+          </div>
+
+          {CABIN_SLOTS.map((slot) => {
+            const assignedBotEntry = Object.entries(builtCabins).find(
+              ([_, val]) => val.slot === slot.id
+            );
+            const assignedBotId = assignedBotEntry?.[0];
+            const assignedFile = assignedBotEntry?.[1]?.file;
+            const assignedBot = bots.find((b) => b.id === assignedBotId);
+
+            return (
+              <div
+                key={slot.id}
+                style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+                className={`absolute w-44 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl border transition-all duration-500 flex flex-col justify-between p-3 ${
+                  assignedBot
+                    ? 'bg-[var(--bg-card)] border-emerald-500/50 shadow-md shadow-emerald-500/10'
+                    : 'border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/20'
+                }`}
+              >
+                {/* Cabin Header */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-[var(--text-main)] truncate">
+                    {slot.name}
+                  </span>
+                  {assignedBot ? (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  ) : (
+                    <span className="text-[9px] font-mono text-[var(--text-faint)]">Empty Lot</span>
+                  )}
+                </div>
+
+                {/* Cabin Furniture or Desk Representation */}
+                {assignedBot && assignedFile ? (
+                  <div className="flex-1 flex flex-col items-center justify-center my-1 bg-[var(--bg-panel)] rounded-xl p-2 border border-[var(--border-subtle)]">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Monitor className="w-4 h-4 text-emerald-500" />
+                      <span className="text-[10px] font-bold font-mono text-[var(--text-main)] truncate max-w-[100px]">
+                        {assignedFile.path}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
+                      🔒 File Locked at Desk
+                    </span>
+                    <button
+                      onClick={() => handleUnassignTask(assignedFile.id)}
+                      className="mt-1 text-[9px] text-rose-500 hover:underline font-mono"
+                    >
+                      (Relieve Bot / Demolish)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-[10px] text-[var(--text-faint)] font-mono">
+                    Awaiting Assignment
+                  </div>
+                )}
+
+                <div className="text-[9px] text-[var(--text-muted)] font-mono truncate">
+                  {assignedBot ? `Occupant: ${assignedBot.name}` : 'Call Bob to Build'}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* ============================================================ */}
+          {/* CENTER: SHARED MEMORY BOX VAULT & WALL MONITOR                */}
+          {/* ============================================================ */}
+          {/* Wall Whiteboard Monitor (Top Center) */}
           <div
             onClick={() => setShowWallMonitorModal(true)}
-            className="absolute left-1/2 -translate-x-1/2 top-4 w-60 h-28 bg-[var(--bg-card)] border-2 border-emerald-500/40 rounded-2xl p-2 shadow-lg shadow-emerald-500/10 cursor-pointer group hover:border-emerald-500 transition-all z-10"
+            className="absolute top-4 left-1/2 -translate-x-1/2 w-64 h-24 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2 shadow-md hover:border-emerald-500 cursor-pointer transition-all group"
           >
-            <div className="flex items-center justify-between pb-1.5 border-b border-[var(--border-subtle)] text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
-              <span className="flex items-center gap-1 font-bold">
-                <Monitor className="w-3 h-3" /> Project Whiteboard Monitor
+            <div className="flex items-center justify-between text-[10px] font-mono mb-1 text-[var(--text-muted)]">
+              <span className="flex items-center gap-1">
+                <Monitor className="w-3 h-3 text-emerald-500" /> Live App Monitor
               </span>
-              <Maximize2 className="w-3 h-3 group-hover:scale-110 transition-transform text-[var(--text-muted)]" />
+              <Maximize2 className="w-3 h-3 group-hover:scale-110 text-emerald-500 transition-transform" />
             </div>
-            <div className="w-full h-[62px] bg-white rounded-xl overflow-hidden mt-1.5 relative pointer-events-none shadow-inner border border-slate-200">
+            <div className="w-full h-14 bg-black rounded-lg overflow-hidden border border-[var(--border-subtle)] pointer-events-none">
               <iframe
-                title="Mini Wall Monitor"
+                title="Mini Preview"
                 srcDoc={bundledHtml}
+                className="w-[200%] h-[200%] scale-50 origin-top-left border-0"
                 sandbox="allow-scripts"
-                className="w-[200%] h-[200%] transform scale-50 origin-top-left border-0"
               />
-              <div className="absolute inset-0 bg-transparent" />
             </div>
           </div>
 
-          {/* 2. TOP LEFT: Coffee Lounge (Break & Refresh) */}
-          <div className="absolute left-6 top-6 p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center gap-3 shadow-sm min-w-[190px]">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 border border-amber-500/20">
-              <Coffee className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-[var(--text-main)] font-mono flex items-center gap-1">
-                Coffee Lounge <span className="text-[9px] text-amber-500 font-normal">☕</span>
-              </div>
-              <div className="text-[10px] text-[var(--text-muted)]">Idle bots rest & recharge</div>
-            </div>
-          </div>
-
-          {/* 3. TOP RIGHT: Design Studio (Styles & Wireframes) */}
-          <div className="absolute right-6 top-6 p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center gap-3 shadow-sm min-w-[190px]">
-            <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0 border border-pink-500/20">
-              <Palette className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-[11px] font-bold text-[var(--text-main)] font-mono flex items-center gap-1">
-                Design Studio <span className="text-[9px] text-pink-500 font-normal">🎨</span>
-              </div>
-              <div className="text-[10px] text-[var(--text-muted)]">CSS Variables & Tokens</div>
-            </div>
-          </div>
-
-          {/* 4. CENTER: Shared Memory Box Vault Pedestal */}
-          <div
-            onClick={() => {
-              if (files.length > 0) selectFile(files[0].id);
-            }}
-            className={`absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-48 h-32 rounded-3xl border-2 flex flex-col items-center justify-center p-3 cursor-pointer transition-all z-10 ${
-              lockedFilesList.length > 0
-                ? 'bg-amber-500/5 border-amber-500/40 shadow-lg shadow-amber-500/10'
-                : 'bg-[var(--bg-card)] border-emerald-500/30 hover:border-emerald-500 shadow-md shadow-emerald-500/5'
-            }`}
-          >
-            <div className="relative mb-1">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/30">
-                <Folder className="w-5 h-5" />
-              </div>
-              {lockedFilesList.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center animate-bounce shadow-md">
-                  <Lock className="w-2.5 h-2.5" />
-                </span>
-              )}
+          {/* Central Memory Box Code Vault */}
+          <div className="absolute top-[52%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 p-3.5 rounded-2xl bg-[var(--bg-card)] border-2 border-emerald-500/40 shadow-xl shadow-emerald-500/10 flex flex-col gap-2 z-20">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold font-mono text-[var(--text-main)] flex items-center gap-1.5">
+                <Folder className="w-4 h-4 text-emerald-500" /> Memory Box Vault
+              </span>
+              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                {files.length} Files
+              </span>
             </div>
 
-            <div className="text-xs font-bold text-[var(--text-main)] font-mono tracking-tight text-center">
-              Memory Box Vault
-            </div>
-            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-              {files.length} Virtual Files
-            </div>
+            <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+              {files.map((f) => {
+                const isLocked = Boolean(f.lockedBy);
+                const lockerBot = bots.find((b) => b.id === f.lockedBy);
 
-            {/* List of files with lock status pills */}
-            <div className="mt-1 flex items-center gap-1 flex-wrap justify-center max-w-[170px]">
-              {files.slice(0, 3).map((f) => {
-                const isLocked = !!activeLocks[f.path.toLowerCase()];
                 return (
-                  <span
+                  <div
                     key={f.id}
-                    className={`text-[9px] font-mono px-1.5 py-0.2 rounded border ${
-                      isLocked
-                        ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 line-through'
-                        : 'bg-[var(--bg-panel)] text-[var(--text-muted)] border-[var(--border-subtle)]'
-                    }`}
+                    className="flex items-center justify-between p-1.5 rounded-lg bg-[var(--bg-panel)] text-[10px] font-mono border border-[var(--border-subtle)]"
                   >
-                    {f.path}
-                  </span>
+                    <span className={`truncate max-w-[110px] ${isLocked ? 'line-through opacity-70' : 'text-[var(--text-main)]'}`}>
+                      {f.path}
+                    </span>
+
+                    {isLocked ? (
+                      <span className="text-amber-500 flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" />
+                        {lockerBot?.name || 'Locked'}
+                      </span>
+                    ) : (
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) handleAssignTask(f.id, e.target.value);
+                        }}
+                        className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[9px] rounded px-1 py-0.5 text-[var(--text-main)]"
+                      >
+                        <option value="">Assign...</option>
+                        {bots.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          {/* 5. BOTTOM LEFT: Desk A (Lead Architect) */}
-          <div className="absolute left-8 bottom-6 p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm flex items-center gap-3 min-w-[210px]">
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center border border-indigo-500/20">
-              <Laptop className="w-4 h-4" />
+          {/* ============================================================ */}
+          {/* RIGHT SIDE: 5 RECREATION & LEISURE ACTIVITY ZONES            */}
+          {/* ============================================================ */}
+          <div className="absolute top-4 right-4 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-1.5">
+            <Coffee className="w-4 h-4 text-amber-500" />
+            <span>LEISURE & UNTASKED CAMPUS (5 ACTIVITIES)</span>
+          </div>
+
+          {/* Zone 1: Coffee Barista Lounge */}
+          <div
+            style={{ left: `${LEISURE_ZONES.coffee.x}%`, top: `${LEISURE_ZONES.coffee.y}%` }}
+            className="absolute w-44 h-36 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-panel)]/40 border border-[var(--border-subtle)] p-3 flex flex-col justify-between"
+          >
+            <div className="flex items-center gap-1.5 text-[10px] font-bold font-mono text-[var(--text-main)]">
+              {LEISURE_ZONES.coffee.icon}
+              <span>Coffee Lounge</span>
             </div>
-            <div>
-              <div className="text-[11px] font-bold text-[var(--text-main)] font-mono">
-                Desk A: Lead Architect
-              </div>
-              <div className="text-[10px] text-[var(--text-muted)]">Plans, Review, Specs</div>
+            <div className="flex-1 flex items-center justify-center text-2xl opacity-60">
+              ☕ 🥐
+            </div>
+            <div className="text-[9px] font-mono text-[var(--text-muted)] truncate">
+              {LEISURE_ZONES.coffee.desc}
             </div>
           </div>
 
-          {/* 6. BOTTOM RIGHT: Desk B (Dev Workstation) */}
-          <div className="absolute right-8 bottom-6 p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] shadow-sm flex items-center gap-3 min-w-[210px]">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
-              <Terminal className="w-4 h-4" />
+          {/* Zone 2: 8-Bit Arcade & Playground */}
+          <div
+            style={{ left: `${LEISURE_ZONES.arcade.x}%`, top: `${LEISURE_ZONES.arcade.y}%` }}
+            className="absolute w-44 h-36 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-panel)]/40 border border-[var(--border-subtle)] p-3 flex flex-col justify-between"
+          >
+            <div className="flex items-center gap-1.5 text-[10px] font-bold font-mono text-[var(--text-main)]">
+              {LEISURE_ZONES.arcade.icon}
+              <span>Arcade Playground</span>
             </div>
-            <div>
-              <div className="text-[11px] font-bold text-[var(--text-main)] font-mono">
-                Desk B: Dev Station
-              </div>
-              <div className="text-[10px] text-[var(--text-muted)]">Code, Logic, Tests</div>
+            <div className="flex-1 flex items-center justify-center text-2xl opacity-60">
+              🕹️ 👾
+            </div>
+            <div className="text-[9px] font-mono text-[var(--text-muted)] truncate">
+              {LEISURE_ZONES.arcade.desc}
             </div>
           </div>
 
-          {/* Autonomous Animated Roaming Bots with Carried File Packets */}
+          {/* Zone 3: Chill TV Lounge */}
+          <div
+            style={{ left: `${LEISURE_ZONES.tv.x}%`, top: `${LEISURE_ZONES.tv.y}%` }}
+            className="absolute w-44 h-36 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-panel)]/40 border border-[var(--border-subtle)] p-3 flex flex-col justify-between"
+          >
+            <div className="flex items-center gap-1.5 text-[10px] font-bold font-mono text-[var(--text-main)]">
+              {LEISURE_ZONES.tv.icon}
+              <span>TV & Media Lounge</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-2xl opacity-60">
+              📺 🛋️
+            </div>
+            <div className="text-[9px] font-mono text-[var(--text-muted)] truncate">
+              {LEISURE_ZONES.tv.desc}
+            </div>
+          </div>
+
+          {/* Zone 4: Water Cooler Chat Hub */}
+          <div
+            style={{ left: `${LEISURE_ZONES.water_cooler.x}%`, top: `${LEISURE_ZONES.water_cooler.y}%` }}
+            className="absolute w-44 h-36 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-panel)]/40 border border-[var(--border-subtle)] p-3 flex flex-col justify-between"
+          >
+            <div className="flex items-center gap-1.5 text-[10px] font-bold font-mono text-[var(--text-main)]">
+              {LEISURE_ZONES.water_cooler.icon}
+              <span>Water Cooler Chat</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-2xl opacity-60">
+              💧 💬
+            </div>
+            <div className="text-[9px] font-mono text-[var(--text-muted)] truncate">
+              {LEISURE_ZONES.water_cooler.desc}
+            </div>
+          </div>
+
+          {/* Zone 5: Reading Nook & Knowledge Vault */}
+          <div
+            onClick={() => setShowKnowledgeModal(true)}
+            style={{ left: `${LEISURE_ZONES.library.x}%`, top: `${LEISURE_ZONES.library.y}%` }}
+            className="absolute w-44 h-36 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-panel)]/40 border border-[var(--border-subtle)] p-3 flex flex-col justify-between cursor-pointer hover:border-emerald-500 transition-colors group"
+          >
+            <div className="flex items-center justify-between text-[10px] font-bold font-mono text-[var(--text-main)]">
+              <span className="flex items-center gap-1.5">
+                {LEISURE_ZONES.library.icon} Knowledge Vault
+              </span>
+              <BookOpen className="w-3 h-3 text-emerald-500 group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="flex-1 flex items-center justify-center text-2xl opacity-60">
+              📚 📖
+            </div>
+            <div className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400 truncate">
+              {activeProject?.knowledgeBase?.length ? `${activeProject.knowledgeBase.length} docs loaded` : 'Click to add docs'}
+            </div>
+          </div>
+
+          {/* ============================================================ */}
+          {/* BOB THE BUILDER (CREATOR BOT) ANIMATION                      */}
+          {/* ============================================================ */}
           <AnimatePresence>
-            {bots.map((bot, index) => {
-              const pos = getBotPosition(bot, index);
-              const emote = getBotEmote(bot);
-              const isSelected = selectedBotId === bot.id;
-              const isWorking = bot.status === 'working';
-              const isTroubled = bot.status === 'blocked' || bot.status === 'needs_help';
-              const carriedFile = getCarriedFileForBot(bot.id, bot.status);
+            {creatorBotState && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, x: 200, y: 300 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  x: CABIN_SLOTS[creatorBotState.targetSlot]?.x * 12 || 200,
+                  y: CABIN_SLOTS[creatorBotState.targetSlot]?.y * 6.8 || 200,
+                }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.6 }}
+                className="absolute z-50 flex flex-col items-center pointer-events-none"
+              >
+                <div className="px-2.5 py-1 bg-amber-500 text-slate-950 font-bold font-mono text-[11px] rounded-full shadow-lg flex items-center gap-1 mb-1 animate-bounce">
+                  <HardHat className="w-3.5 h-3.5" />
+                  <span>🔨 Bob: Building Studio for {creatorBotState.targetBotName}!</span>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-amber-500 border-2 border-white text-white flex items-center justify-center text-xl shadow-xl animate-pulse">
+                  👷
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              return (
-                <motion.div
-                  key={bot.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{
-                    left: `${pos.x}%`,
-                    top: `${pos.y}%`,
-                    opacity: 1,
-                    scale: 1,
-                  }}
-                  transition={{
-                    type: 'spring',
-                    stiffness: 60,
-                    damping: 15,
-                    mass: 0.9,
-                  }}
-                  onClick={() => setSelectedBotId(isSelected ? null : bot.id)}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20 group ${
-                    isTroubled ? 'animate-frustrated' : ''
+          {/* ============================================================ */}
+          {/* REX THE WRECK-IT (DESTROYER BOT) ANIMATION                   */}
+          {/* ============================================================ */}
+          <AnimatePresence>
+            {destroyerBotState && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, x: 50, y: 100 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  x: CABIN_SLOTS[destroyerBotState.targetSlot]?.x * 12 || 200,
+                  y: CABIN_SLOTS[destroyerBotState.targetSlot]?.y * 6.8 || 200,
+                }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.6 }}
+                className="absolute z-50 flex flex-col items-center pointer-events-none"
+              >
+                <div className="px-2.5 py-1 bg-rose-500 text-white font-bold font-mono text-[11px] rounded-full shadow-lg flex items-center gap-1 mb-1 animate-bounce">
+                  <Bomb className="w-3.5 h-3.5" />
+                  <span>💥 Rex: Demolished Studio! Work done!</span>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-rose-600 border-2 border-white text-white flex items-center justify-center text-xl shadow-xl animate-pulse">
+                  🚜
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ============================================================ */}
+          {/* RENDER ALL BOTS ON THE CANVAS FLOOR                          */}
+          {/* ============================================================ */}
+          {bots.map((bot, index) => {
+            const pos = getBotPosition(bot, index);
+            const isAssigned = Boolean(builtCabins[bot.id]);
+            const isWorking = bot.status === 'working';
+            const isTroubled = bot.status === 'blocked';
+
+            // Determine appropriate facial emote
+            let emote: BotEmoteType = 'normal';
+            if (isProjectStopped) {
+              emote = 'coffee'; // Sleeping / relaxed
+            } else if (isTroubled) {
+              emote = 'frustrated';
+            } else if (isWorking) {
+              emote = 'lightbulb';
+            } else if (isAssigned) {
+              emote = 'lightbulb';
+            } else {
+              const currentAct = botLeisureSpots[bot.id];
+              emote = currentAct ? LEISURE_ZONES[currentAct].emote : 'normal';
+            }
+
+            return (
+              <motion.div
+                key={bot.id}
+                animate={{
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                }}
+                transition={{
+                  type: 'spring',
+                  stiffness: 45,
+                  damping: 14,
+                }}
+                onClick={() => setSelectedBotId(bot.id)}
+                className="absolute -translate-x-1/2 -translate-y-1/2 z-30 cursor-pointer group flex flex-col items-center"
+              >
+                {/* Sleeping ZZZ bubble when project is stopped */}
+                {isProjectStopped && (
+                  <div className="absolute -top-12 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 shadow-md animate-bounce whitespace-nowrap">
+                    💤 zzz (Sleeping)
+                  </div>
+                )}
+
+                {/* File chip if bot is currently carrying file in cabin */}
+                {isAssigned && builtCabins[bot.id]?.file && (
+                  <div className="absolute -top-12 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500 text-slate-950 shadow-md whitespace-nowrap flex items-center gap-1 border border-emerald-400">
+                    <FileCode className="w-3 h-3" />
+                    <span>{builtCabins[bot.id].file.path}</span>
+                    <Lock className="w-2.5 h-2.5 ml-0.5" />
+                  </div>
+                )}
+
+                {/* Animated Bot Face in custom shape */}
+                <BotFace
+                  shape={bot.avatarShape || 'squircle'}
+                  color={bot.avatarColor}
+                  status={isProjectStopped ? 'waiting' : bot.status}
+                  emote={emote}
+                  size={46}
+                  showEmoteBadge={!isProjectStopped}
+                />
+
+                {/* Name Tag */}
+                <div
+                  className={`mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono border shadow-sm transition-all flex items-center gap-1 ${
+                    isAssigned
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold'
+                      : 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-subtle)]'
                   }`}
                 >
-                  {/* Carried File Pill floating above the bot if they're carrying/working on a file */}
-                  {carriedFile && (
-                    <motion.div
-                      initial={{ y: 5, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      className="absolute -top-12 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500 text-slate-950 shadow-md border border-emerald-400 whitespace-nowrap flex items-center gap-1 z-30 animate-bounce"
-                    >
-                      <Lock className="w-2.5 h-2.5" />
-                      <span>Carrying: {carriedFile}</span>
-                    </motion.div>
-                  )}
+                  <span>{bot.name}</span>
+                  <span className="text-[9px] opacity-75 font-normal">({bot.role})</span>
+                </div>
 
-                  {/* Frustrated Blocked Speech Bubble */}
-                  {isTroubled && (
-                    <div className="absolute -top-14 left-1/2 -translate-x-1/2 px-2 py-1 rounded-xl text-[10px] font-mono bg-rose-500 text-white shadow-lg whitespace-nowrap flex items-center gap-1 z-30 animate-pulse">
-                      <span>💢 File is locked! Waiting...</span>
+                {/* Interactive Details Popover */}
+                {selectedBotId === bot.id && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-16 w-52 p-3 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-strong)] shadow-2xl z-50 text-left font-sans animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-bold text-xs text-[var(--text-main)]">{bot.name}</span>
+                      <button
+                        onClick={() => setSelectedBotId(null)}
+                        className="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                      >
+                        ✕
+                      </button>
                     </div>
-                  )}
-
-                  {/* Bot Robot Avatar */}
-                  <div className="flex flex-col items-center">
-                    <BotFace
-                      status={bot.status}
-                      emote={emote}
-                      shape={bot.avatarShape || 'squircle'}
-                      color={bot.avatarColor}
-                      size={48}
-                      isWalking={isExecutingTurn || isSimulatingWalk}
-                    />
-
-                    {/* Bot Name Tag Pill */}
-                    <div
-                      className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono border shadow-sm transition-all flex items-center gap-1 ${
-                        isWorking
-                          ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold'
-                          : isTroubled
-                          ? 'bg-rose-500/15 text-rose-500 border-rose-500/30'
-                          : 'bg-[var(--bg-card)] text-[var(--text-main)] border-[var(--border-subtle)]'
-                      }`}
-                    >
-                      <span>{bot.name}</span>
-                      <span className="text-[9px] opacity-75 font-normal">({bot.role})</span>
+                    <p className="text-[11px] text-[var(--text-muted)] italic mb-2 leading-snug">
+                      "{bot.personality}"
+                    </p>
+                    <div className="text-[10px] font-mono text-[var(--text-muted)] space-y-0.5 border-t border-[var(--border-subtle)] pt-1.5">
+                      <div>Status: <strong className="text-[var(--text-main)] capitalize">{isAssigned ? 'Assigned to Cabin' : 'Free in Lounge'}</strong></div>
+                      <div>Tokens: <strong className="text-[var(--text-main)]">{bot.tokenUsage.toLocaleString()}</strong></div>
                     </div>
                   </div>
-
-                  {/* Interactive Popover Card on Click */}
-                  {isSelected && (
-                    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-52 bg-[var(--bg-card)] border border-[var(--border-strong)] rounded-2xl p-3 shadow-2xl text-[11px] text-[var(--text-main)] z-40 pointer-events-auto">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
-                          {bot.name}
-                        </span>
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[var(--bg-panel)] text-[var(--text-muted)] border border-[var(--border-subtle)]">
-                          {bot.role}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-[var(--text-muted)] italic mb-2 leading-snug">
-                        "{bot.personality}"
-                      </div>
-                      <div className="text-[10px] text-[var(--text-muted)] border-t border-[var(--border-subtle)] pt-1.5 space-y-0.5 font-mono">
-                        <div className="flex justify-between">
-                          <span>Status:</span>
-                          <span className="font-semibold capitalize text-[var(--text-main)]">{bot.status}</span>
-                        </div>
-                        {carriedFile && (
-                          <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                            <span>File Locked:</span>
-                            <span className="font-bold">{carriedFile}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span>Tokens:</span>
-                          <span>{bot.tokenUsage}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                )}
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
 
-      {/* Expanded Wall Monitor Modal (Full Screen Live Preview) */}
+      {/* Wall Monitor Expand Modal */}
       {showWallMonitorModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[var(--bg-card)] border border-[var(--border-strong)] rounded-3xl max-w-4xl w-full h-[85vh] p-4 flex flex-col shadow-2xl relative">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl max-w-4xl w-full h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-panel)]">
+              <span className="text-xs font-bold font-mono text-[var(--text-main)] flex items-center gap-1.5">
+                <Monitor className="w-4 h-4 text-emerald-500" />
+                Live Project Whiteboard App Preview
+              </span>
+              <button
+                onClick={() => setShowWallMonitorModal(false)}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] px-2 py-1 rounded-lg"
+              >
+                Close ✕
+              </button>
+            </div>
+            <div className="flex-1 bg-black">
+              <iframe
+                title="Full Preview"
+                srcDoc={bundledHtml}
+                className="w-full h-full border-0"
+                sandbox="allow-scripts allow-modals"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Knowledge Base Modal */}
+      {showKnowledgeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl max-w-2xl w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4 border-b border-[var(--border-subtle)] pb-3">
               <div className="flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                <BookOpen className="w-5 h-5 text-emerald-500" />
                 <h3 className="text-sm font-bold text-[var(--text-main)] font-mono">
-                  Project Whiteboard Screen (Live Built Code)
+                  Project Knowledge Base & Reference Docs
                 </h3>
               </div>
               <button
-                onClick={() => setShowWallMonitorModal(false)}
-                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)] transition-colors"
+                onClick={() => setShowKnowledgeModal(false)}
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-main)]"
               >
-                <Minimize2 className="w-4 h-4" />
+                Close ✕
               </button>
             </div>
 
-            <div className="flex-1 bg-white rounded-2xl overflow-hidden mt-3 shadow-inner">
-              <iframe
-                title="Expanded Whiteboard View"
-                srcDoc={bundledHtml}
-                sandbox="allow-scripts"
-                className="w-full h-full border-0"
-              />
-            </div>
+            <p className="text-xs text-[var(--text-muted)] mb-4 leading-relaxed">
+              Bots consult these local files and reference documents on every turn to ensure brand consistency, architecture standards, and specifications are respected.
+            </p>
+
+            {activeProject?.localFolderPath && (
+              <div className="mb-4 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                <Folder className="w-4 h-4 shrink-0" />
+                <span>Linked PC Directory: <strong>{activeProject.localFolderPath}</strong> (No 100MB limit)</span>
+              </div>
+            )}
+
+            {activeProject?.knowledgeBase && activeProject.knowledgeBase.length > 0 ? (
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {activeProject.knowledgeBase.map((k) => (
+                  <div
+                    key={k.id}
+                    className="p-2.5 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] flex items-center justify-between text-xs font-mono"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="px-1.5 py-0.5 rounded bg-[var(--bg-card)] text-[10px] uppercase font-bold text-[var(--text-muted)]">
+                        {k.type}
+                      </span>
+                      <span className="text-[var(--text-main)] font-semibold truncate">{k.name}</span>
+                      <span className="text-[var(--text-faint)] text-[10px]">({formatFileSize(k.size)})</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-[var(--bg-panel)] rounded-xl border border-dashed border-[var(--border-subtle)]">
+                <p className="text-xs text-[var(--text-muted)]">No knowledge files attached to this project yet.</p>
+                <button
+                  onClick={() => {
+                    setShowKnowledgeModal(false);
+                    setActiveView('projects');
+                  }}
+                  className="mt-3 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold"
+                >
+                  Go to Projects to Add Docs
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

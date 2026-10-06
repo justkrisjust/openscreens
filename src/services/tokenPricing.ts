@@ -102,6 +102,26 @@ export const PRICING_CATALOG: Record<string, ModelPricing> = {
     outputPerMillion: 0.9,
   },
 
+  // Local AI (Ollama / DeepSeek / LM Studio) — Free!
+  'deepseek-r1:latest': {
+    modelName: 'DeepSeek-R1 (Local)',
+    provider: 'ollama',
+    inputPerMillion: 0.0,
+    outputPerMillion: 0.0,
+  },
+  'deepseek-coder:6.7b': {
+    modelName: 'DeepSeek-Coder (Local)',
+    provider: 'ollama',
+    inputPerMillion: 0.0,
+    outputPerMillion: 0.0,
+  },
+  'llama3.2:latest': {
+    modelName: 'Llama 3.2 (Local)',
+    provider: 'ollama',
+    inputPerMillion: 0.0,
+    outputPerMillion: 0.0,
+  },
+
   // Demo simulator models
   'demo-claude-sonnet-persona': {
     modelName: 'Demo Claude Sonnet',
@@ -129,6 +149,7 @@ const DEFAULT_FALLBACK_PRICING: Record<ProviderId, { inputPerMillion: number; ou
   gemini: { inputPerMillion: 0.15, outputPerMillion: 0.6 },
   xai: { inputPerMillion: 2.0, outputPerMillion: 10.0 },
   mistral: { inputPerMillion: 2.0, outputPerMillion: 6.0 },
+  ollama: { inputPerMillion: 0.0, outputPerMillion: 0.0 },
   mock: { inputPerMillion: 2.0, outputPerMillion: 8.0 },
 };
 

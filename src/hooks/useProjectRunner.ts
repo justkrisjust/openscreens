@@ -6,6 +6,7 @@ import { lockManager } from '../services/lockManager';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useBotStore } from '../stores/useBotStore';
 import { useProjectStore } from '../stores/useProjectStore';
+import { buildKnowledgeContextPrompt } from '../services/knowledgeService';
 
 export function useProjectRunner() {
   const activeProject = useProjectStore((s) => s.activeProject);
@@ -99,7 +100,7 @@ Rules for token efficiency:
 3. If writing a virtual project file, format as:
 MEMORY_WRITE: <filePath>
 <file content>
-4. If a file is locked, NEVER fight it or poll. Choose another file or task.`;
+4. If a file is locked, NEVER fight it or poll. Choose another file or task.${buildKnowledgeContextPrompt(activeProject.knowledgeBase)}`;
 
         const userPrompt = `Turn ${activeProject.currentTurn + 1} of ${activeProject.maxTurns}.
 Memory Box Files:
