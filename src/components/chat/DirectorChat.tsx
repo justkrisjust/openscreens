@@ -65,24 +65,29 @@ export const DirectorChat: React.FC = () => {
   return (
     <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-col h-full shadow-sm transition-colors duration-200">
       {/* Header & Target selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--border-subtle)] mb-2">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-emerald-500" />
-          <span className="text-xs font-semibold text-[var(--text-main)] font-heading">
-            Director Chat (You are Final Approver)
-          </span>
-          <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.2 rounded-full font-mono">
-            {filteredMessages.length} msgs
+      <div className="pb-2 border-b border-[var(--border-subtle)] mb-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <MessageSquare className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-xs font-bold text-[var(--text-main)] font-heading truncate">
+              Director Chat
+            </span>
+            <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-mono shrink-0">
+              {filteredMessages.length} msgs
+            </span>
+          </div>
+          <span className="text-[10px] text-[var(--text-muted)] font-mono shrink-0">
+            Final Approver
           </span>
         </div>
 
         {/* Target Selector */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-[var(--text-muted)] font-mono">Target:</span>
+        <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-[var(--border-subtle)]/60">
+          <span className="text-[10px] text-[var(--text-muted)] font-mono font-medium shrink-0">Target:</span>
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[11px] rounded-lg px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
+            className="flex-1 min-w-0 bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[11px] rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 font-medium cursor-pointer truncate"
           >
             <option value="all">Broadcast to All Bots</option>
             {projectBots.map((b) => (
@@ -97,7 +102,7 @@ export const DirectorChat: React.FC = () => {
       {/* Message History Thread */}
       <div
         ref={chatScrollRef}
-        className="flex-1 min-h-[160px] max-h-[260px] overflow-y-auto space-y-2 pr-1 mb-2 scroll-smooth"
+        className="flex-1 min-h-[160px] overflow-y-auto space-y-2 pr-1 mb-2 scroll-smooth"
       >
         {filteredMessages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center py-6 text-center text-xs text-[var(--text-muted)]">

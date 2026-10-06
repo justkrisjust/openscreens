@@ -264,17 +264,17 @@ export const OfficeCanvas: React.FC = () => {
         {/* Lower Workspace: Event Feed (Left) - Shared Memory Box (Center) - Director Chat (Right) */}
         <div className="grid grid-cols-12 gap-4 items-stretch">
           {/* Left Column: Compact Event Feed */}
-          <div className="col-span-12 xl:col-span-3 lg:col-span-3 min-h-[460px] flex flex-col">
+          <div className="col-span-12 xl:col-span-3 lg:col-span-3 h-[500px] flex flex-col">
             <EventFeed />
           </div>
 
           {/* Center Column: Shared Memory Box (Virtual File Tree + Editor) */}
-          <div className="col-span-12 xl:col-span-6 lg:col-span-6 min-h-[460px] flex flex-col">
+          <div className="col-span-12 xl:col-span-6 lg:col-span-6 h-[500px] flex flex-col">
             <MemoryBox />
           </div>
 
           {/* Right Column: Director Chat */}
-          <div className="col-span-12 xl:col-span-3 lg:col-span-3 min-h-[460px] flex flex-col">
+          <div className="col-span-12 xl:col-span-3 lg:col-span-3 h-[500px] flex flex-col">
             <DirectorChat />
           </div>
         </div>

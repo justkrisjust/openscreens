@@ -10,11 +10,15 @@ import {
   ShieldAlert,
   ArrowRight,
   Loader2,
+  Plus,
+  Check,
+  X,
 } from 'lucide-react';
 import { useBotStore } from '../../stores/useBotStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useUIStore } from '../../stores/useUIStore';
+import { BotFace } from '../office/BotFace';
 import {
   runFullCompatibilityCheck,
   type FullCompatibilityReport,
@@ -28,19 +32,34 @@ export const CompatibilityModal: React.FC = () => {
 
   const [report, setReport] = useState<FullCompatibilityReport | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [showBotPicker, setShowBotPicker] = useState(false);
 
-  const projectBots = bots.filter((b) => activeProject?.botIds.includes(b.id));
+  // Selected bots to check compatibility for (defaults to project bots or first 3 bots)
+  const [selectedBotIds, setSelectedBotIds] = useState<string[]>(() => {
+    if (activeProject && activeProject.botIds.length > 0) {
+      return activeProject.botIds;
+    }
+    return bots.slice(0, 3).map((b) => b.id);
+  });
+
+  const targetBots = bots.filter((b) => selectedBotIds.includes(b.id));
+
+  const toggleBotSelection = (botId: string) => {
+    setSelectedBotIds((prev) =>
+      prev.includes(botId) ? prev.filter((id) => id !== botId) : [...prev, botId]
+    );
+  };
 
   const handleRunCheck = async () => {
-    if (projectBots.length === 0) {
-      showToast('No bots assigned to active project.', 'warn');
+    if (targetBots.length === 0) {
+      showToast('Please select at least 1 or 2 bots to test.', 'warn');
       return;
     }
 
     setIsRunning(true);
     try {
       const result = await runFullCompatibilityCheck(
-        projectBots,
+        targetBots,
         (prov) => getKey(prov),
         (prov) => getProxyUrl(prov)
       );
@@ -93,7 +112,7 @@ export const CompatibilityModal: React.FC = () => {
 
         <button
           onClick={handleRunCheck}
-          disabled={isRunning || projectBots.length === 0}
+          disabled={isRunning || targetBots.length === 0}
           className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50"
         >
           {isRunning ? (
@@ -110,11 +129,143 @@ export const CompatibilityModal: React.FC = () => {
         </button>
       </div>
 
+      {/* Bot Candidate Selection Bar with Plus Symbol */}
+      <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-4 mb-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-emerald-500" />
+            <span className="text-xs font-bold text-[var(--text-main)] font-heading">
+              Candidate Bots to Test ({targetBots.length} Selected)
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowBotPicker(!showBotPicker)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold transition-all shadow-sm w-fit"
+            title="Click plus symbol to choose which bots to check"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Select Bots</span>
+          </button>
+        </div>
+
+        {/* Selected Bot Avatar Chips */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {targetBots.map((bot) => (
+            <div
+              key={bot.id}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] shadow-sm animate-in zoom-in-95 duration-150"
+            >
+              <BotFace
+                shape={bot.avatarShape || 'squircle'}
+                color={bot.avatarColor || '#10b981'}
+                status={bot.status}
+                size={22}
+                showEmoteBadge={false}
+              />
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-[var(--text-main)] font-mono">{bot.name}</span>
+                <span className="text-[9px] text-[var(--text-muted)] capitalize">{bot.role}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => toggleBotSelection(bot.id)}
+                className="ml-1 p-0.5 rounded text-[var(--text-muted)] hover:text-rose-500 hover:bg-[var(--bg-elevated)]"
+                title={`Remove ${bot.name} from test`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+
+          {/* Inline Plus Button in chip list */}
+          <button
+            type="button"
+            onClick={() => setShowBotPicker(!showBotPicker)}
+            className="flex items-center justify-center w-8 h-8 rounded-xl border border-dashed border-emerald-500/50 bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/15 transition-all"
+            title="Add bot to test"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Bot Picker Popover Panel */}
+        {showBotPicker && (
+          <div className="mt-4 pt-3 border-t border-[var(--border-subtle)] animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-mono text-[var(--text-muted)]">
+                Choose any bots to test collaboration & lock handling:
+              </span>
+              <div className="flex items-center gap-2 text-[10px] font-mono">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBotIds(bots.map((b) => b.id))}
+                  className="text-emerald-500 hover:underline font-bold"
+                >
+                  Select All ({bots.length})
+                </button>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBotIds([])}
+                  className="text-rose-500 hover:underline font-bold"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+              {bots.map((b) => {
+                const isChecked = selectedBotIds.includes(b.id);
+                return (
+                  <div
+                    key={b.id}
+                    onClick={() => toggleBotSelection(b.id)}
+                    className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all ${
+                      isChecked
+                        ? 'bg-emerald-500/10 border-emerald-500/40 text-[var(--text-main)] shadow-sm'
+                        : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
+                    }`}
+                  >
+                    <BotFace
+                      shape={b.avatarShape || 'squircle'}
+                      color={b.avatarColor || '#10b981'}
+                      status={b.status}
+                      size={24}
+                      showEmoteBadge={false}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold truncate text-[var(--text-main)] font-mono">
+                        {b.name}
+                      </div>
+                      <div className="text-[10px] text-[var(--text-muted)] truncate capitalize">
+                        {b.role} • {b.provider}
+                      </div>
+                    </div>
+                    <div
+                      className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${
+                        isChecked
+                          ? 'bg-emerald-500 border-emerald-500 text-white'
+                          : 'border-[var(--border-subtle)] bg-[var(--bg-card)]'
+                      }`}
+                    >
+                      {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       {!report && !isRunning && (
         <div className="text-center py-16 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-6 shadow-sm">
           <Users className="w-12 h-12 text-[var(--text-faint)] mx-auto mb-3" />
           <h3 className="text-base font-semibold text-[var(--text-main)]">
-            Ready to Test {projectBots.length} Bots
+            Ready to Test {targetBots.length} Selected Bots
           </h3>
           <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto mt-1 mb-5">
             Runs a lightweight evaluation (~500 tokens per bot) verifying format following,
@@ -122,7 +273,8 @@ export const CompatibilityModal: React.FC = () => {
           </p>
           <button
             onClick={handleRunCheck}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition-colors"
+            disabled={targetBots.length === 0}
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition-colors disabled:opacity-50"
           >
             Start Pre-Flight Test
           </button>

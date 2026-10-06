@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Coffee,
@@ -18,7 +18,11 @@ import {
   Hammer,
   Bomb,
   HardHat,
-  Compass,
+  X,
+  MessageSquare,
+  Pause,
+  Play,
+  Zap,
 } from 'lucide-react';
 import type { Bot, VirtualFile } from '../../services/storage';
 import { BotFace, type BotEmoteType } from './BotFace';
@@ -124,12 +128,15 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   const {
     files,
     activeProject,
+    events,
     assignFileToBot,
     unassignFile,
+    toggleBotPause,
+    pausedBotIds,
   } = useProjectStore();
   const { showToast, setActiveView } = useUIStore();
 
-  const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
+  const [selectedBotForBrief, setSelectedBotForBrief] = useState<Bot | null>(null);
   const [showWallMonitorModal, setShowWallMonitorModal] = useState(false);
   const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
 
@@ -142,6 +149,12 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
   // Dynamic Office Cabins: botId -> { slotIndex: number, file: VirtualFile }
   const [builtCabins, setBuiltCabins] = useState<Record<string, { slot: number; file: VirtualFile }>>({});
+
+  // Track waypoint paths for bots so they follow the green line instead of jumping diagonally
+  const [botTransitPaths, setBotTransitPaths] = useState<
+    Record<string, Array<{ x: number; y: number }>>
+  >({});
+  const prevSpotRef = useRef<Record<string, LeisureActivity | string>>({});
 
   // Animations for Bob (Creator) & Rex (Destroyer)
   const [creatorBotState, setCreatorBotState] = useState<{ active: boolean; targetBotName: string; targetSlot: number } | null>(null);
@@ -166,7 +179,55 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     setBuiltCabins(nextCabins);
   }, [files]);
 
-  // Ambient wandering: every 5.5 seconds, pick an untasked bot to wander to another leisure zone
+  // Generate waypoint route along the transit line between two spots
+  const computeWaypointsAlongLine = (
+    fromSpot: LeisureActivity | string,
+    toSpot: LeisureActivity,
+    index: number
+  ): Array<{ x: number; y: number }> => {
+    const targetZone = LEISURE_ZONES[toSpot];
+    const offsetX = ((index % 3) - 1) * 3.5;
+    const offsetY = Math.floor(index / 3) * 2.8;
+    const finalDest = { x: targetZone.x + offsetX, y: targetZone.y + offsetY };
+
+    // If starting from an assigned cabin
+    if (fromSpot.startsWith('cabin-')) {
+      const slotIndex = parseInt(fromSpot.replace('cabin-', ''), 10) || 0;
+      const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
+      return [
+        { x: slot.x + 2.5, y: slot.y + 1.5 }, // origin in cabin desk
+        { x: 20, y: slot.y },                // walk to West spine
+        { x: 20, y: 56 },                    // down to West concourse hub
+        { x: 50, y: 56 },                    // across Central Vault
+        { x: 64, y: 56 },                    // to East Concourse hub
+        { x: 64, y: targetZone.y },          // vertical to destination branch
+        finalDest,                           // along branch into spot
+      ];
+    }
+
+    // Both spots are in East Campus (Leisure Zones)
+    const fromZone = LEISURE_ZONES[fromSpot as LeisureActivity] || LEISURE_ZONES.coffee;
+    const fromPos = { x: fromZone.x + offsetX, y: fromZone.y + offsetY };
+
+    if (fromZone.id === targetZone.id) {
+      return [finalDest];
+    }
+
+    // If on the exact same branch (e.g. coffee <-> arcade, or tv <-> water_cooler)
+    if (fromZone.y === targetZone.y) {
+      return [fromPos, finalDest];
+    }
+
+    // Different branch: exit along branch to East corridor spine at x: 64%, walk along spine, enter target branch
+    return [
+      fromPos,                             // current spot
+      { x: 64, y: fromZone.y },            // step onto East spine corridor
+      { x: 64, y: targetZone.y },          // walk along East corridor to target level
+      finalDest,                           // walk along branch into new spot
+    ];
+  };
+
+  // Ambient wandering: every 5.5 seconds, pick an untasked bot to wander along the line
   useEffect(() => {
     if (isProjectStopped) return;
 
@@ -177,6 +238,17 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       const randomBot = untaskedBots[Math.floor(Math.random() * untaskedBots.length)];
       const activities: LeisureActivity[] = ['coffee', 'arcade', 'tv', 'water_cooler', 'library'];
       const nextActivity = activities[Math.floor(Math.random() * activities.length)];
+
+      const currentSpot = prevSpotRef.current[randomBot.id] || 'coffee';
+      const botIndex = bots.findIndex((b) => b.id === randomBot.id);
+      const waypoints = computeWaypointsAlongLine(currentSpot, nextActivity, botIndex);
+
+      prevSpotRef.current[randomBot.id] = nextActivity;
+
+      setBotTransitPaths((prev) => ({
+        ...prev,
+        [randomBot.id]: waypoints,
+      }));
 
       setBotLeisureSpots((prev) => ({
         ...prev,
@@ -217,6 +289,9 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     const success = await assignFileToBot(fileId, targetBot.id, targetBot.name);
     if (success) {
       showToast(`👷 Bob built a custom studio for ${targetBot.name}!`, 'success');
+      if (selectedBotForBrief?.id === botId) {
+        setSelectedBotForBrief(null);
+      }
     }
   };
 
@@ -233,19 +308,27 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     triggerDestroyerBot(botName, slotIndex);
     await unassignFile(fileId);
     showToast(`🚜 Rex demolished the studio! ${botName} is relieved to leisure campus.`, 'info');
+    if (selectedBotForBrief?.id === botId) {
+      setSelectedBotForBrief(null);
+    }
   };
 
-  // Calculate bot coordinates on the floor
-  const getBotPosition = (bot: Bot, index: number) => {
+  // Get current waypoint array for rendering bot position / animation
+  const getBotWaypoints = (bot: Bot, index: number): Array<{ x: number; y: number }> => {
     const cabin = builtCabins[bot.id];
 
-    // If bot has a cabin on the left
+    // If bot has a cabin on the left, stay at cabin desk
     if (cabin) {
       const slot = CABIN_SLOTS[cabin.slot] || CABIN_SLOTS[0];
-      return { x: slot.x + 2.5, y: slot.y + 1.5 };
+      return [{ x: slot.x + 2.5, y: slot.y + 1.5 }];
     }
 
-    // Untasked bots wander in the 5 leisure spots on the right
+    // If we have an active transit route computed along the green line
+    if (botTransitPaths[bot.id] && botTransitPaths[bot.id].length > 0) {
+      return botTransitPaths[bot.id];
+    }
+
+    // Default resting spot in leisure campus
     const currentActivity = botLeisureSpots[bot.id] || (
       index % 5 === 0 ? 'coffee' :
       index % 5 === 1 ? 'arcade' :
@@ -257,7 +340,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     const offsetX = ((index % 3) - 1) * 3.5;
     const offsetY = Math.floor(index / 3) * 2.8;
 
-    return { x: zone.x + offsetX, y: zone.y + offsetY };
+    return [{ x: zone.x + offsetX, y: zone.y + offsetY }];
   };
 
   // Live bundled preview HTML
@@ -287,7 +370,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             Colony Virtual Office Floor
           </span>
           <span className="text-[11px] text-[var(--text-muted)] hidden md:inline">
-            • Free Look Canvas • Connected Railway Transit Line Network
+            • Free Look Canvas • Connected Transit Network
           </span>
         </div>
 
@@ -364,127 +447,46 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.07] bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
           {/* ============================================================ */}
-          {/* ROAD & RAILWAY TRANSIT LINE SYSTEM (SVG OVERLAY)             */}
+          {/* SIMPLE SINGLE LIGHT GREEN TRANSIT LINE (CLEAN SVG)           */}
           {/* ============================================================ */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
             <defs>
-              {/* Glowing filter for neon railway tracks */}
-              <filter id="trackGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3" result="blur" />
+              <filter id="cleanGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
                 <feComposite in="SourceGraphic" in2="blur" operator="over" />
               </filter>
-              <linearGradient id="railGradEmerald" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="#34d399" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0.8" />
-              </linearGradient>
             </defs>
 
-            {/* --- UNDERBED HIGHWAY ROADWAYS --- */}
-            {/* Artery 1: West Cabins Terminal (x: 540) to Central Vault (x: 720) */}
+            {/* Soft Ambient Underglow */}
             <path
-              d="M 288 414 L 720 414"
-              stroke="rgba(16, 185, 129, 0.08)"
-              strokeWidth="32"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Artery 2: Central Vault (x: 720) to East Campus Depot (x: 900) */}
-            <path
-              d="M 720 414 L 920 414"
-              stroke="rgba(16, 185, 129, 0.08)"
-              strokeWidth="32"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* North Branch: East Campus Depot up to Coffee & Arcade */}
-            <path
-              d="M 920 414 L 920 200 L 1300 200"
-              stroke="rgba(16, 185, 129, 0.08)"
-              strokeWidth="28"
+              d="M 172 162 L 403 162 M 172 384 L 403 384 M 172 606 L 403 606 M 288 162 L 288 606 M 288 414 L 920 414 M 920 162 L 920 606 M 920 162 L 1296 162 M 920 384 L 1166 384 M 920 606 L 1296 606"
+              stroke="rgba(52, 211, 153, 0.2)"
+              strokeWidth="6"
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
             />
-            {/* South Branch: East Campus Depot down to TV & Water Cooler */}
-            <path
-              d="M 920 414 L 920 620 L 1300 620"
-              stroke="rgba(16, 185, 129, 0.08)"
-              strokeWidth="28"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
-            {/* Mid Branch: East Campus Depot into Library / Knowledge Vault */}
-            <path
-              d="M 920 414 L 1166 414"
-              stroke="rgba(16, 185, 129, 0.08)"
-              strokeWidth="28"
-              strokeLinecap="round"
-              fill="none"
-            />
 
-            {/* Cabins North Feeder (Pods 0, 1) */}
+            {/* Single Clean Light Green Line */}
             <path
-              d="M 288 200 L 288 414"
-              stroke="rgba(16, 185, 129, 0.08)"
-              strokeWidth="28"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Cabins South Feeder (Pods 4, 5) */}
-            <path
-              d="M 288 620 L 288 414"
-              stroke="rgba(16, 185, 129, 0.08)"
-              strokeWidth="28"
-              strokeLinecap="round"
-              fill="none"
-            />
-
-            {/* --- RAILWAY SLEEPER TIES (CROSS-TIES) --- */}
-            <path
-              d="M 172 414 L 720 414 M 720 414 L 920 414 M 920 414 L 920 200 L 1300 200 M 920 414 L 920 620 L 1300 620 M 920 414 L 1166 414 M 288 200 L 288 620"
-              stroke="rgba(16, 185, 129, 0.3)"
-              strokeWidth="14"
-              strokeDasharray="2 12"
-              fill="none"
-            />
-
-            {/* --- TWIN RAILWAY TRACK RAILS --- */}
-            <path
-              d="M 172 411 L 720 411 M 720 411 L 920 411 M 920 411 L 920 197 L 1300 197 M 920 411 L 920 617 L 1300 617 M 920 411 L 1166 411 M 285 200 L 285 620"
-              stroke="rgba(16, 185, 129, 0.45)"
-              strokeWidth="2"
-              fill="none"
-            />
-            <path
-              d="M 172 417 L 720 417 M 720 417 L 920 417 M 920 417 L 920 203 L 1300 203 M 920 417 L 920 623 L 1300 623 M 920 417 L 1166 417 M 291 200 L 291 620"
-              stroke="rgba(16, 185, 129, 0.45)"
-              strokeWidth="2"
-              fill="none"
-            />
-
-            {/* --- ANIMATED CENTER PULSE ENERGY LINE --- */}
-            <path
-              d="M 172 414 L 720 414 M 720 414 L 920 414 M 920 414 L 920 200 L 1300 200 M 920 414 L 920 620 L 1300 620 M 920 414 L 1166 414 M 288 200 L 288 620"
+              d="M 172 162 L 403 162 M 172 384 L 403 384 M 172 606 L 403 606 M 288 162 L 288 606 M 288 414 L 920 414 M 920 162 L 920 606 M 920 162 L 1296 162 M 920 384 L 1166 384 M 920 606 L 1296 606"
               stroke="#34d399"
               strokeWidth="2.5"
-              strokeDasharray="8 16"
               strokeLinecap="round"
-              filter="url(#trackGlow)"
-              className="animate-pulse"
+              strokeLinejoin="round"
+              filter="url(#cleanGlow)"
               fill="none"
             />
 
-            {/* Station Junction Nodes */}
-            <circle cx="288" cy="414" r="7" fill="#10b981" stroke="#ffffff" strokeWidth="2.5" />
-            <circle cx="720" cy="414" r="8" fill="#10b981" stroke="#ffffff" strokeWidth="3" />
-            <circle cx="920" cy="414" r="7" fill="#10b981" stroke="#ffffff" strokeWidth="2.5" />
-            <circle cx="1036" cy="200" r="5" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="1296" cy="200" r="5" fill="#a78bfa" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="1166" cy="414" r="6" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="1036" cy="620" r="5" fill="#06b6d4" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="1296" cy="620" r="5" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
+            {/* Sleek Junction Waypoint Dots */}
+            <circle cx="288" cy="414" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="720" cy="414" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="920" cy="414" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="1036" cy="162" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="162" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1166" cy="384" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="1036" cy="606" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="606" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
           </svg>
 
           {/* Central Colony Concourse Label */}
@@ -545,7 +547,11 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-1">
+                    <div
+                      onClick={() => setSelectedBotForBrief(assignedBot)}
+                      className="flex items-center gap-2 mt-1 cursor-pointer hover:opacity-80 transition-opacity"
+                      title="Click to view bot dossier"
+                    >
                       <BotFace
                         shape={assignedBot.avatarShape || 'squircle'}
                         color={assignedBot.avatarColor || '#10b981'}
@@ -849,17 +855,18 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           </AnimatePresence>
 
           {/* ============================================================ */}
-          {/* ALL BOTS LIVING & MOVING ON THE CANVAS FLOOR                 */}
+          {/* ALL BOTS MOVING ALONG THE GREEN TRANSIT LINE                 */}
           {/* ============================================================ */}
           {bots.map((bot, index) => {
-            const pos = getBotPosition(bot, index);
+            const waypoints = getBotWaypoints(bot, index);
             const isAssigned = Boolean(builtCabins[bot.id]);
             const isWorking = bot.status === 'working';
             const isTroubled = bot.status === 'blocked';
+            const isPaused = pausedBotIds.has(bot.id);
 
             // Determine appropriate facial emote
             let emote: BotEmoteType = 'normal';
-            if (isProjectStopped) {
+            if (isProjectStopped || isPaused) {
               emote = 'coffee'; // Relaxed / sleeping
             } else if (isTroubled) {
               emote = 'frustrated';
@@ -874,26 +881,24 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
               <motion.div
                 key={bot.id}
                 animate={{
-                  left: `${pos.x}%`,
-                  top: `${pos.y}%`,
+                  left: waypoints.map((p) => `${p.x}%`),
+                  top: waypoints.map((p) => `${p.y}%`),
                 }}
                 transition={{
-                  type: 'spring',
-                  damping: 24,
-                  stiffness: 70,
+                  duration: Math.max(2.4, waypoints.length * 0.8),
+                  ease: 'easeInOut',
                 }}
-                onClick={() => setSelectedBotId(bot.id === selectedBotId ? null : bot.id)}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer group z-30 transition-transform ${
-                  selectedBotId === bot.id ? 'scale-115' : 'hover:scale-110'
-                }`}
+                onClick={() => setSelectedBotForBrief(bot)}
+                className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer group z-30 transition-transform hover:scale-115"
               >
                 {/* Floating Activity Bubble / Bot Name Pill */}
-                <div className="px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold text-[var(--text-main)] shadow-md flex items-center gap-1 mb-1 whitespace-nowrap">
+                <div className="px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold text-[var(--text-main)] shadow-md flex items-center gap-1 mb-1 whitespace-nowrap group-hover:border-emerald-500 transition-colors">
                   <span
                     className="w-1.5 h-1.5 rounded-full"
                     style={{ backgroundColor: bot.avatarColor || '#10b981' }}
                   />
                   <span>{bot.name}</span>
+                  {isPaused && <span className="text-[9px] text-amber-500">(Paused)</span>}
                 </div>
 
                 {/* Animated Interactive Bot Face with Emotes */}
@@ -915,6 +920,197 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           })}
         </motion.div>
       </div>
+
+      {/* ============================================================ */}
+      {/* BOT BRIEF / DOSSIER MODAL ON CLICK                           */}
+      {/* ============================================================ */}
+      {selectedBotForBrief && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl max-w-lg w-full p-6 shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-[var(--border-subtle)] mb-4">
+              <div className="flex items-center gap-3">
+                <BotFace
+                  shape={selectedBotForBrief.avatarShape || 'squircle'}
+                  color={selectedBotForBrief.avatarColor || '#10b981'}
+                  status={selectedBotForBrief.status}
+                  emote={
+                    builtCabins[selectedBotForBrief.id]
+                      ? 'lightbulb'
+                      : LEISURE_ZONES[botLeisureSpots[selectedBotForBrief.id] || 'coffee'].emote
+                  }
+                  size={48}
+                  showEmoteBadge={true}
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-[var(--text-main)] font-heading">
+                      {selectedBotForBrief.name}
+                    </h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold uppercase">
+                      {selectedBotForBrief.role}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
+                    Model Provider: <strong className="text-[var(--text-main)]">{selectedBotForBrief.provider}</strong>
+                    {selectedBotForBrief.model && ` (${selectedBotForBrief.model})`}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedBotForBrief(null)}
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)] transition-colors"
+                title="Close dossier"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content Details */}
+            <div className="space-y-3.5 text-xs">
+              {/* Location & Current Task */}
+              <div className="p-3 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)]">
+                <div className="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-1 flex items-center justify-between">
+                  <span>Current Assignment & Location</span>
+                  {builtCabins[selectedBotForBrief.id] ? (
+                    <span className="text-emerald-500 flex items-center gap-1 font-bold">
+                      <Lock className="w-3 h-3" /> In Cabin Studio
+                    </span>
+                  ) : (
+                    <span className="text-amber-500 font-bold">Untasked (In Lounge)</span>
+                  )}
+                </div>
+
+                {builtCabins[selectedBotForBrief.id] ? (
+                  <div>
+                    <p className="text-[var(--text-main)] font-semibold mt-1">
+                      Working on: <code className="text-emerald-500 font-mono">{builtCabins[selectedBotForBrief.id].file.path}</code>
+                    </p>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-mono">
+                      Location: {CABIN_SLOTS[builtCabins[selectedBotForBrief.id].slot]?.name}
+                    </p>
+                    <button
+                      onClick={() => handleUnassignTask(builtCabins[selectedBotForBrief.id].file.id)}
+                      className="mt-2.5 px-3 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                    >
+                      <Bomb className="w-3 h-3" />
+                      <span>Relieve Bot & Demolish Cabin (Rex)</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[var(--text-main)] mt-1">
+                      Chilling at: <strong className="text-amber-500 font-mono">{LEISURE_ZONES[botLeisureSpots[selectedBotForBrief.id] || 'coffee'].name}</strong>
+                    </p>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                      {LEISURE_ZONES[botLeisureSpots[selectedBotForBrief.id] || 'coffee'].desc}
+                    </p>
+
+                    {/* Quick Assign Dropdown */}
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <span className="text-[11px] font-mono text-[var(--text-muted)]">Assign File:</span>
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) handleAssignTask(e.target.value, selectedBotForBrief.id);
+                        }}
+                        defaultValue=""
+                        className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-xs rounded-xl px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="">Choose file for bot...</option>
+                        {files.filter((f) => !f.lockedBy).map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.path}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Token Usage Stats */}
+              <div className="p-3 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)]">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold text-[var(--text-muted)] mb-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Token Budget & Usage</span>
+                  </span>
+                  <span className="text-[var(--text-main)]">
+                    {selectedBotForBrief.tokenUsage.toLocaleString()} / {selectedBotForBrief.tokenCap.toLocaleString()} tokens
+                  </span>
+                </div>
+
+                <div className="w-full bg-[var(--bg-card)] rounded-full h-2 overflow-hidden border border-[var(--border-subtle)] mb-2">
+                  <div
+                    className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.min(100, (selectedBotForBrief.tokenUsage / selectedBotForBrief.tokenCap) * 100)}%`,
+                    }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-[var(--text-muted)]">
+                  <div>Input: {selectedBotForBrief.inputTokens?.toLocaleString() || 0} tokens</div>
+                  <div>Output: {selectedBotForBrief.outputTokens?.toLocaleString() || 0} tokens</div>
+                </div>
+              </div>
+
+              {/* Recent Event Log */}
+              {(() => {
+                const botEvents = events.filter((e) => e.botId === selectedBotForBrief.id);
+                const lastEvent = botEvents[botEvents.length - 1];
+                if (!lastEvent) return null;
+
+                return (
+                  <div className="p-3 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)]">
+                    <div className="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-1">
+                      Latest Activity
+                    </div>
+                    <p className="text-[var(--text-main)] italic">
+                      "{lastEvent.summary}"
+                    </p>
+                    <span className="text-[10px] font-mono text-[var(--text-faint)] mt-1 block">
+                      {new Date(lastEvent.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer Action Buttons */}
+            <div className="pt-4 border-t border-[var(--border-subtle)] mt-4 flex items-center justify-between">
+              <button
+                onClick={() => toggleBotPause(selectedBotForBrief.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-colors ${
+                  pausedBotIds.has(selectedBotForBrief.id)
+                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-500'
+                    : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                }`}
+              >
+                {pausedBotIds.has(selectedBotForBrief.id) ? (
+                  <>
+                    <Play className="w-3.5 h-3.5" />
+                    <span>Resume Bot</span>
+                  </>
+                ) : (
+                  <>
+                    <Pause className="w-3.5 h-3.5" />
+                    <span>Pause Bot</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => setSelectedBotForBrief(null)}
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-600/20"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fullscreen Sandbox Live App Modal */}
       {showWallMonitorModal && (

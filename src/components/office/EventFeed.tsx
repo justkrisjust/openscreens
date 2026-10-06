@@ -36,7 +36,7 @@ export const EventFeed: React.FC = () => {
   };
 
   return (
-    <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-col h-44 shadow-sm overflow-hidden transition-colors duration-200">
+    <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-col h-full shadow-sm overflow-hidden transition-colors duration-200">
       <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)] mb-2">
         <div className="flex items-center gap-2">
           <Activity className="w-3.5 h-3.5 text-emerald-500" />
