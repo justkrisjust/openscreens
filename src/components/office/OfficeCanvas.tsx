@@ -8,6 +8,8 @@ import {
   Layers,
   Box,
   Activity,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useBotStore } from '../../stores/useBotStore';
@@ -17,9 +19,12 @@ import { MemoryBox } from '../memory/MemoryBox';
 import { EventFeed } from './EventFeed';
 import { DirectorChat } from '../chat/DirectorChat';
 import { VirtualOfficeFloor } from './VirtualOfficeFloor';
+import { T40GuideModal } from '../common/T40GuideModal';
 
 export const OfficeCanvas: React.FC = () => {
   const [mobileSection, setMobileSection] = useState<'floor' | 'chat' | 'memory' | 'feed'>('floor');
+  const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
+  const [isT40Open, setIsT40Open] = useState(false);
 
   const {
     activeProject,
@@ -160,11 +165,24 @@ export const OfficeCanvas: React.FC = () => {
               <Square className="w-3.5 h-3.5 fill-current" />
             </button>
 
-            {/* Quick Chat Shortcut Button */}
+            {/* Ask T-40 Guide button */}
             <button
-              onClick={() => setMobileSection('chat')}
+              onClick={() => setIsT40Open(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all shadow-sm"
+              title="Ask T-40 (Guide & FAQ)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Ask T-40</span>
+            </button>
+
+            {/* Quick Chat Shortcut Button (Opens Drawer on Desktop & Mobile) */}
+            <button
+              onClick={() => {
+                setIsChatDrawerOpen(true);
+                setMobileSection('chat');
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                mobileSection === 'chat'
+                isChatDrawerOpen || mobileSection === 'chat'
                   ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 shadow-sm'
                   : 'bg-[var(--bg-panel)] text-[var(--text-main)] border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]'
               }`}
@@ -172,7 +190,7 @@ export const OfficeCanvas: React.FC = () => {
             >
               <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
               <span>Chat</span>
-              <span className="text-[10px] font-mono px-1 py-0.2 bg-emerald-500/10 text-emerald-500 rounded-full">
+              <span className="text-[10px] font-mono px-1.5 py-0.2 bg-emerald-500/10 text-emerald-500 rounded-full font-bold">
                 {events.filter((e) => e.type === 'chat_message').length}
               </span>
             </button>
@@ -334,6 +352,35 @@ export const OfficeCanvas: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Slide-out Director Chat Drawer (Accessible anywhere) */}
+      {isChatDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md h-full bg-[var(--bg-card)] border-l border-[var(--border-subtle)] shadow-2xl p-4 flex flex-col animate-in slide-in-from-right duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-500" />
+                <span className="font-bold text-sm text-[var(--text-main)] font-heading">
+                  Director Chat Drawer
+                </span>
+              </div>
+              <button
+                onClick={() => setIsChatDrawerOpen(false)}
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)] transition-colors"
+                title="Close chat drawer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <DirectorChat />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* T-40 Guide Companion Modal */}
+      <T40GuideModal isOpen={isT40Open} onClose={() => setIsT40Open(false)} />
     </div>
   );
 };

@@ -88,13 +88,20 @@ export const BotFace: React.FC<BotFaceProps> = ({
         return (
           <>
             <polygon
-              points="32,6 39,22 56,22 42,34 47,52 32,41 17,52 22,34 8,22 25,22"
+              points="32,3 40,21 60,22 44,35 50,54 32,42 14,54 20,35 4,22 24,21"
               fill={chassisFill}
               stroke={strokeCol}
               strokeWidth="2.5"
               strokeLinejoin="round"
             />
-            <circle cx="32" cy="33" r="15" fill="#090a0d" stroke={strokeCol} strokeWidth="1" strokeOpacity="0.6" />
+            <polygon
+              points="32,12 37,24 50,25 40,33 44,45 32,37 20,45 24,33 14,25 27,24"
+              fill="#090a0d"
+              stroke={strokeCol}
+              strokeWidth="1.2"
+              strokeLinejoin="round"
+              strokeOpacity="0.8"
+            />
           </>
         );
 

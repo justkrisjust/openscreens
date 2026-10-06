@@ -100,7 +100,8 @@ Rules for token efficiency:
 3. If writing a virtual project file, format as:
 MEMORY_WRITE: <filePath>
 <file content>
-4. If a file is locked, NEVER fight it or poll. Choose another file or task.${buildKnowledgeContextPrompt(activeProject.knowledgeBase)}`;
+4. If a file is locked, NEVER fight it or poll. Choose another file or task.
+5. On the last line of an edit, always output: SUMMARY: <short 1-sentence explanation of what you changed>.${buildKnowledgeContextPrompt(activeProject.knowledgeBase)}`;
 
         const userPrompt = `Turn ${activeProject.currentTurn + 1} of ${activeProject.maxTurns}.
 Memory Box Files:
@@ -138,7 +139,15 @@ What is your next action or message to the team?`;
 
         if (writeMatch) {
           const filePath = writeMatch[1].trim();
-          const fileContent = writeMatch[2].trim();
+          let fileContent = writeMatch[2].trim();
+          
+          // Extract optional SUMMARY tag
+          const summaryMatch = fileContent.match(/[\r\n]+SUMMARY:\s*([^\r\n]+)$/i);
+          let autoSummary = `${currentBot.name} updated ${filePath}`;
+          if (summaryMatch) {
+            autoSummary = summaryMatch[1].trim();
+            fileContent = fileContent.replace(/[\r\n]+SUMMARY:\s*([^\r\n]+)$/i, '').trim();
+          }
 
           const existingFile = files.find(
             (f) => f.path.toLowerCase() === filePath.toLowerCase()
@@ -149,14 +158,15 @@ What is your next action or message to the team?`;
               existingFile.id,
               fileContent,
               currentBot.id,
-              currentBot.name
+              currentBot.name,
+              autoSummary
             );
             if (success) {
               await logEvent(
                 currentBot.id,
                 currentBot.name,
                 'file_edit',
-                `${currentBot.name} updated ${filePath}`,
+                `${currentBot.name}: ${autoSummary}`,
                 filePath,
                 response.tokenUsage.totalTokens
               );

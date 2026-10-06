@@ -17,9 +17,11 @@ import {
 import { useUIStore } from '../../stores/useUIStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useProjectStore } from '../../stores/useProjectStore';
+import { T40GuideModal } from './T40GuideModal';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [t40Open, setT40Open] = useState(false);
 
   const {
     activeView,
@@ -152,6 +154,16 @@ export const Header: React.FC = () => {
 
         {/* Desktop Security & Actions */}
         <div className="hidden md:flex items-center gap-2">
+          {/* Ask T-40 Guide Button */}
+          <button
+            onClick={() => setT40Open(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all shadow-sm"
+            title="Ask T-40 (Guide & FAQ)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Guide (T-40)</span>
+          </button>
+
           {/* Key Vault Button */}
           <button
             onClick={() => setActiveView('keys')}
@@ -338,6 +350,22 @@ export const Header: React.FC = () => {
             )}
           </button>
 
+          <button
+            onClick={() => {
+              setT40Open(true);
+              setMobileMenuOpen(false);
+            }}
+            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Ask T-40 (Guide Companion)</span>
+            </div>
+            <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.2 rounded-full font-mono font-bold">
+              FAQ
+            </span>
+          </button>
+
           <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-subtle)] mt-1">
             <button
               onClick={() => {
@@ -370,6 +398,9 @@ export const Header: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Out-of-the-Box T-40 Guide Companion Modal */}
+      <T40GuideModal isOpen={t40Open} onClose={() => setT40Open(false)} />
     </header>
   );
 };

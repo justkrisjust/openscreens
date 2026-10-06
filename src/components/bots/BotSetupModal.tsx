@@ -5,6 +5,8 @@ import {
   Loader2,
   Plus,
   Save,
+  Search,
+  Check,
 } from 'lucide-react';
 import { useBotStore } from '../../stores/useBotStore';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -45,6 +47,7 @@ export const BotSetupModal: React.FC = () => {
   const [name, setName] = useState('');
   const [provider, setProvider] = useState<ProviderId>('gemini');
   const [model, setModel] = useState('');
+  const [modelSearch, setModelSearch] = useState('');
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [role, setRole] = useState<BotRole>('developer');
@@ -53,6 +56,10 @@ export const BotSetupModal: React.FC = () => {
   const [avatarShape, setAvatarShape] = useState<BotShape>('squircle');
   const [tokenCap, setTokenCap] = useState(15000);
   const [testEmote, setTestEmote] = useState<BotEmoteType>('normal');
+
+  const filteredModels = availableModels.filter((m) =>
+    m.toLowerCase().includes(modelSearch.toLowerCase().trim())
+  );
 
   const adapters = getAllAdapters();
 
@@ -353,30 +360,84 @@ export const BotSetupModal: React.FC = () => {
             )}
           </div>
 
-          {/* Dynamic Model Dropdown */}
+          {/* Searchable Model Selector */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-medium text-[var(--text-main)]">
-                Model (Fetched Dynamically)
+                Model ({availableModels.length} available)
               </label>
               {isLoadingModels && (
-                <span className="text-[10px] text-emerald-500 flex items-center gap-1">
+                <span className="text-[10px] text-emerald-500 flex items-center gap-1 font-mono">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Fetching models...
                 </span>
               )}
             </div>
-            <select
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2.5 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 font-mono"
-            >
-              {availableModels.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+
+            {/* Quick search input */}
+            <div className="relative mb-2">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+              <input
+                type="text"
+                placeholder="Filter models (e.g. deepseek, coder, llama, 8b)..."
+                value={modelSearch}
+                onChange={(e) => setModelSearch(e.target.value)}
+                className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl pl-8 pr-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-emerald-500 font-mono"
+              />
+              {modelSearch && (
+                <button
+                  type="button"
+                  onClick={() => setModelSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] font-mono"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Filtered models listbox */}
+            <div className="max-h-40 overflow-y-auto border border-[var(--border-subtle)] bg-[var(--bg-panel)] rounded-xl p-1 space-y-1">
+              {filteredModels.length === 0 ? (
+                <div className="p-3 text-center">
+                  <p className="text-xs text-[var(--text-muted)]">No predefined model matching "{modelSearch}"</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModel(modelSearch.trim());
+                      setModelSearch('');
+                    }}
+                    className="mt-1.5 px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-mono font-medium transition-colors"
+                  >
+                    + Use custom model: "{modelSearch.trim()}"
+                  </button>
+                </div>
+              ) : (
+                filteredModels.map((m) => {
+                  const isSelected = model === m;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setModel(m)}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-mono text-left transition-colors ${
+                        isSelected
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30'
+                          : 'text-[var(--text-main)] hover:bg-[var(--bg-elevated)]'
+                      }`}
+                    >
+                      <span className="truncate">{m}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 ml-1.5" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Selected model preview indicator */}
+            <div className="mt-1.5 flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono">
+              <span>Selected model:</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{model || 'None selected'}</span>
+            </div>
           </div>
 
           {/* Role */}

@@ -52,14 +52,41 @@ export const ollamaAdapter: ProviderAdapter = {
       }
     }
 
-    return [
+    const defaultOllamaModels = [
       'deepseek-r1:latest',
-      'deepseek-coder:6.7b',
-      'llama3.2:latest',
+      'deepseek-r1:8b',
+      'deepseek-r1:14b',
+      'deepseek-r1:32b',
+      'deepseek-r1:70b',
+      'deepseek-coder-v2:latest',
       'qwen2.5-coder:latest',
+      'qwen2.5-coder:7b',
+      'qwen2.5-coder:14b',
+      'qwen2.5-coder:32b',
+      'qwen2.5:latest',
+      'llama3.3:latest',
+      'llama3.3:70b',
+      'llama3.2:latest',
+      'llama3.2:3b',
+      'llama3.2:1b',
+      'llama3.1:latest',
+      'llama3.1:8b',
+      'llama3.1:70b',
       'mistral:latest',
+      'mistral-nemo:latest',
+      'mixtral:8x7b',
       'phi4:latest',
+      'phi3.5:latest',
+      'codellama:latest',
+      'codellama:7b',
+      'starcoder2:latest',
+      'gemma2:latest',
+      'gemma2:9b',
+      'gemma2:27b',
+      'command-r:latest',
     ];
+
+    return defaultOllamaModels;
   },
 
   async sendMessage(req: ChatCompletionRequest): Promise<ChatCompletionResponse> {

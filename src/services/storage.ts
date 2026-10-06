@@ -44,6 +44,7 @@ export interface VirtualFile {
   content: string;
   lockedBy?: string | null; // botId currently editing
   lockAcquiredAt?: number | null;
+  lastSummary?: string;
   updatedAt: number;
 }
 

@@ -52,6 +52,23 @@ export const DEMO_BOTS: Bot[] = [
     status: 'thinking',
     createdAt: Date.now() - 3400000,
   },
+  {
+    id: 'bot-t40',
+    name: 'T-40',
+    provider: 'ollama',
+    model: 'deepseek-r1:latest',
+    role: 'reviewer',
+    personality: 'Office Guide & Companion. Explains turns, helps connect local Ollama models, and tours the Colony streets.',
+    avatarColor: '#10b981',
+    avatarIcon: 'Sparkles',
+    avatarShape: 'star',
+    tokenUsage: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    tokenCap: 50000,
+    status: 'waiting',
+    createdAt: Date.now() - 3300000,
+  },
 ];
 
 export const DEMO_PROJECT_ID = 'demo-project-weather';
@@ -60,7 +77,7 @@ export const DEMO_PROJECT: Project = {
   id: DEMO_PROJECT_ID,
   name: 'Retro Weather Dashboard',
   goal: 'Build a responsive retro-styled weather dashboard widget with animated conditions, city toggles, and temperature charts.',
-  botIds: ['demo-bot-larry', 'demo-bot-ada', 'demo-bot-milo'],
+  botIds: ['demo-bot-larry', 'demo-bot-ada', 'demo-bot-milo', 'bot-t40'],
   status: 'idle',
   maxTurns: 15,
   currentTurn: 0,

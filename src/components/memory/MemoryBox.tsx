@@ -12,6 +12,7 @@ import {
   Check,
   Eye,
   Edit3,
+  Sparkles,
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { marked } from 'marked';
@@ -209,49 +210,46 @@ export const MemoryBox: React.FC = () => {
         <div className="flex-1 flex flex-col min-h-0 bg-[var(--bg-card)]">
           {/* Active File Metadata Bar */}
           <div className="px-4 py-2 border-b border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)] bg-[var(--bg-panel)]">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-mono text-[var(--text-main)] font-semibold">{activeFile.path}</span>
-              {activeLocks[activeFile.path.toLowerCase()] ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1 font-mono">
-                    <Lock className="w-2.5 h-2.5" />
-                    Locked: {activeLocks[activeFile.path.toLowerCase()].botName}
-                  </span>
-                  <button
-                    onClick={async () => {
+
+              {/* Assignment / Reassignment / Release Control */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-[var(--text-muted)] font-mono">Assigned:</span>
+                <select
+                  value={activeFile.lockedBy || ''}
+                  onChange={async (e) => {
+                    const botId = e.target.value;
+                    if (!botId) {
                       await unassignFile(activeFile.id);
-                      showToast(`Unassigned ${activeFile.path}`, 'info');
-                    }}
-                    className="text-[10px] text-rose-500 hover:underline font-mono"
-                    title="Release lock and relieve bot"
-                  >
-                    (Release)
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-[var(--text-muted)] font-mono">Assign to:</span>
-                  <select
-                    value=""
-                    onChange={async (e) => {
-                      const botId = e.target.value;
-                      if (botId) {
-                        const targetBot = bots.find((b) => b.id === botId);
-                        if (targetBot) {
-                          await assignFileToBot(activeFile.id, targetBot.id, targetBot.name);
-                          showToast(`Assigned ${activeFile.path} to ${targetBot.name}!`, 'success');
-                        }
+                      showToast(`Released ${activeFile.path}`, 'info');
+                    } else {
+                      const targetBot = bots.find((b) => b.id === botId);
+                      if (targetBot) {
+                        await assignFileToBot(activeFile.id, targetBot.id, targetBot.name);
+                        showToast(`Assigned ${activeFile.path} to ${targetBot.name}!`, 'success');
                       }
-                    }}
-                    className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] rounded px-1.5 py-0.5 text-[var(--text-main)] font-mono focus:border-emerald-500"
-                  >
-                    <option value="">Choose bot...</option>
-                    {bots.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name} ({b.role})
-                      </option>
-                    ))}
-                  </select>
+                    }
+                  }}
+                  className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] rounded-lg px-2 py-0.5 text-[var(--text-main)] font-mono focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="">(Unassigned / Free)</option>
+                  {bots.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} ({b.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Bot Auto-Summary Display */}
+              {activeFile.lastSummary && (
+                <div
+                  className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 max-w-sm truncate"
+                  title={activeFile.lastSummary}
+                >
+                  <Sparkles className="w-2.5 h-2.5 shrink-0" />
+                  <span className="truncate">Summary: {activeFile.lastSummary}</span>
                 </div>
               )}
             </div>

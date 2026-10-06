@@ -52,7 +52,8 @@ interface ProjectState {
     fileId: string,
     content: string,
     botId?: string,
-    botName?: string
+    botName?: string,
+    summary?: string
   ) => Promise<boolean>;
   deleteVirtualFileById: (fileId: string) => Promise<void>;
   refreshLocks: () => void;
@@ -252,7 +253,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     return newFile;
   },
 
-  updateVirtualFileContent: async (fileId, content, botId, botName) => {
+  updateVirtualFileContent: async (fileId, content, botId, botName, summary) => {
     const active = get().activeProject;
     if (!active) return false;
 
@@ -277,6 +278,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const updated: VirtualFile = {
       ...target,
       content,
+      lastSummary: summary || (botName ? `Updated by ${botName}` : target.lastSummary),
       updatedAt: Date.now(),
     };
 
@@ -375,6 +377,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (!active) return false;
     const file = get().files.find((f) => f.id === fileId);
     if (!file) return false;
+
+    // If already held by another bot, release first to allow reassignment
+    if (file.lockedBy && file.lockedBy !== botId) {
+      lockManager.releaseLock(active.id, file.path, file.lockedBy);
+    }
 
     const lockResult = lockManager.acquireLock(active.id, file.path, botId, botName);
     if (!lockResult.success) return false;
