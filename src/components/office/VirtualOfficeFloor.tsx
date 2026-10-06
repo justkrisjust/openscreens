@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Coffee,
   Lock,
@@ -10,7 +10,6 @@ import {
   RotateCcw,
   ZoomIn,
   ZoomOut,
-  Laptop,
   Tv,
   Gamepad2,
   Droplet,
@@ -19,7 +18,6 @@ import {
   Bomb,
   HardHat,
   X,
-  MessageSquare,
   Pause,
   Play,
   Zap,
@@ -36,8 +34,15 @@ interface VirtualOfficeFloorProps {
   isExecutingTurn: boolean;
 }
 
-// 5 Leisure Activity Zones on the Right Side
-export type LeisureActivity = 'coffee' | 'arcade' | 'tv' | 'water_cooler' | 'library';
+// 7 Leisure & Study Activity Zones across Campus
+export type LeisureActivity =
+  | 'coffee'
+  | 'arcade'
+  | 'gpu_spa'
+  | 'dj_lounge'
+  | 'tv'
+  | 'water_cooler'
+  | 'knowledge';
 
 interface LeisureZone {
   id: LeisureActivity;
@@ -50,13 +55,13 @@ interface LeisureZone {
   stationName: string;
 }
 
-const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
+export const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
   coffee: {
     id: 'coffee',
     name: 'Coffee Barista Lounge',
     icon: <Coffee className="w-4 h-4 text-amber-500" />,
     x: 72,
-    y: 25,
+    y: 23,
     desc: 'Sipping espresso & recharging energy',
     emote: 'coffee',
     stationName: '☕ Coffee Station',
@@ -66,20 +71,30 @@ const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
     name: '8-Bit Arcade Playground',
     icon: <Gamepad2 className="w-4 h-4 text-violet-400" />,
     x: 90,
-    y: 25,
+    y: 23,
     desc: 'Testing reflexes with retro games',
     emote: 'stars',
     stationName: '🕹️ Arcade Depot',
   },
-  library: {
-    id: 'library',
-    name: 'Knowledge Vault & Library',
-    icon: <BookOpen className="w-4 h-4 text-emerald-500" />,
-    x: 81,
-    y: 54,
-    desc: 'Reading project specs & documentation',
-    emote: 'lightbulb',
-    stationName: '📚 Vault Terminal',
+  gpu_spa: {
+    id: 'gpu_spa',
+    name: 'GPU Overclock Sauna & Spa',
+    icon: <Zap className="w-4 h-4 text-rose-400" />,
+    x: 72,
+    y: 53,
+    desc: 'Thermal cooling dip & clearing tensor cache',
+    emote: 'stars',
+    stationName: '🧖‍♂️ GPU Spa',
+  },
+  dj_lounge: {
+    id: 'dj_lounge',
+    name: 'Synthwave DJ Booth & Dancefloor',
+    icon: <Sparkles className="w-4 h-4 text-fuchsia-400" />,
+    x: 90,
+    y: 53,
+    desc: 'Tuning neural frequencies to synth beats',
+    emote: 'normal',
+    stationName: '🎧 DJ Stage',
   },
   tv: {
     id: 'tv',
@@ -101,6 +116,16 @@ const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
     emote: 'normal',
     stationName: '💧 Cooler Branch',
   },
+  knowledge: {
+    id: 'knowledge',
+    name: 'Knowledge Vault Terminal',
+    icon: <BookOpen className="w-4 h-4 text-emerald-500" />,
+    x: 50,
+    y: 82,
+    desc: 'Reading project specs & documentation',
+    emote: 'lightbulb',
+    stationName: '📚 Vault Terminal',
+  },
 };
 
 // 6 Spacious Cabin Workstation Slots on the Left Side
@@ -112,13 +137,15 @@ interface CabinSlot {
 }
 
 const CABIN_SLOTS: CabinSlot[] = [
-  { id: 0, name: 'Studio Pod Alpha', x: 12, y: 25 },
-  { id: 1, name: 'Studio Pod Beta', x: 28, y: 25 },
-  { id: 2, name: 'Studio Pod Gamma', x: 12, y: 54 },
-  { id: 3, name: 'Studio Pod Delta', x: 28, y: 54 },
+  { id: 0, name: 'Studio Pod Alpha', x: 12, y: 23 },
+  { id: 1, name: 'Studio Pod Beta', x: 28, y: 23 },
+  { id: 2, name: 'Studio Pod Gamma', x: 12, y: 53 },
+  { id: 3, name: 'Studio Pod Delta', x: 28, y: 53 },
   { id: 4, name: 'Studio Pod Epsilon', x: 12, y: 82 },
   { id: 5, name: 'Studio Pod Zeta', x: 28, y: 82 },
 ];
+
+const TRANSIT_ANIMATION_SECONDS = 3.2;
 
 export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   bots,
@@ -213,7 +240,10 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     setBuiltCabins(nextCabins);
   }, [files]);
 
-  // Generate waypoint route strictly along the light green transit line
+  // =========================================================================
+  // WAYPOINT ROUTING STRICTLY ALONG THE LIGHT GREEN TRANSIT NETWORK
+  // Includes the separate Cabin-to-Chill Express Bypass Line (y = 36%) per SS1
+  // =========================================================================
   const computeWaypointsAlongLine = (
     fromSpot: LeisureActivity | string,
     toSpot: LeisureActivity | string,
@@ -222,12 +252,13 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     const offsetX = ((index % 3) - 1) * 3.5;
     const offsetY = Math.floor(index / 3) * 2.8;
 
-    // Case 1: Destination is a Cabin Slot (e.g., 'cabin-0')
+    // CASE 1: Heading into a Cabin Workstation (e.g. 'cabin-0')
     if (typeof toSpot === 'string' && toSpot.startsWith('cabin-')) {
       const slotIndex = parseInt(toSpot.replace('cabin-', ''), 10) || 0;
       const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
       const targetDesk = { x: slot.x + 2.5, y: slot.y + 1.5 };
 
+      // From another cabin
       if (typeof fromSpot === 'string' && fromSpot.startsWith('cabin-')) {
         const fromIndex = parseInt(fromSpot.replace('cabin-', ''), 10) || 0;
         const fromSlot = CABIN_SLOTS[fromIndex] || CABIN_SLOTS[0];
@@ -239,40 +270,85 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
         ];
       }
 
-      // From Leisure Lounge to Cabin desk along the green line:
+      // From Knowledge Vault at Center Bottom (x: 50, y: 82)
+      if (fromSpot === 'knowledge') {
+        return [
+          { x: 50, y: 82 },
+          { x: 20, y: 82 },
+          { x: 20, y: slot.y },
+          targetDesk,
+        ];
+      }
+
+      // From Recreation Campus: Travel via the Express Bypass Line (SS1 fix)
       const fromZone = LEISURE_ZONES[fromSpot as LeisureActivity] || LEISURE_ZONES.coffee;
       const fromPos = { x: fromZone.x + offsetX, y: fromZone.y + offsetY };
       return [
         fromPos,
-        { x: 64, y: fromZone.y },   // step onto East spine corridor
-        { x: 64, y: 54 },           // walk down East spine to central concourse hub
-        { x: 50, y: 54 },           // cross central concourse past Vault
-        { x: 20, y: 54 },           // to West concourse hub
-        { x: 20, y: slot.y },       // along West spine to cabin row
-        targetDesk,                 // walk from spine into cabin desk
+        { x: 64, y: fromZone.y }, // Step onto East spine
+        { x: 64, y: 36 },         // Walk along East spine to Express Bypass Line
+        { x: 20, y: 36 },         // Glide across Express Bypass above Vault
+        { x: 20, y: slot.y },     // Down West spine to cabin floor
+        targetDesk,               // Enter cabin desk
       ];
     }
 
-    // Case 2: Destination is a Leisure Spot
+    // CASE 2: Heading to Knowledge Vault at Center Bottom (SS2 fix)
+    if (toSpot === 'knowledge') {
+      const finalDest = { x: 50 + offsetX, y: 82 + offsetY };
+
+      // From a Cabin
+      if (typeof fromSpot === 'string' && fromSpot.startsWith('cabin-')) {
+        const slotIndex = parseInt(fromSpot.replace('cabin-', ''), 10) || 0;
+        const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
+        return [
+          { x: slot.x + 2.5, y: slot.y + 1.5 },
+          { x: 20, y: slot.y },
+          { x: 20, y: 82 },
+          finalDest,
+        ];
+      }
+
+      // From an East Campus Chill Zone
+      const fromZone = LEISURE_ZONES[fromSpot as LeisureActivity] || LEISURE_ZONES.coffee;
+      const fromPos = { x: fromZone.x + offsetX, y: fromZone.y + offsetY };
+      return [
+        fromPos,
+        { x: 64, y: fromZone.y },
+        { x: 64, y: 82 },
+        finalDest,
+      ];
+    }
+
+    // CASE 3: Heading to an East Campus Recreation Lounge
     const targetZone = LEISURE_ZONES[toSpot as LeisureActivity] || LEISURE_ZONES.coffee;
     const finalDest = { x: targetZone.x + offsetX, y: targetZone.y + offsetY };
 
+    // From Cabin desk: Travel via Express Bypass Line (SS1 fix)
     if (typeof fromSpot === 'string' && fromSpot.startsWith('cabin-')) {
-      // From Cabin desk to Leisure lounge along the green line:
       const slotIndex = parseInt(fromSpot.replace('cabin-', ''), 10) || 0;
       const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
       return [
-        { x: slot.x + 2.5, y: slot.y + 1.5 }, // origin at cabin desk
-        { x: 20, y: slot.y },                // walk to West spine
-        { x: 20, y: 54 },                    // to West concourse hub
-        { x: 50, y: 54 },                    // across central concourse past Vault
-        { x: 64, y: 54 },                    // to East concourse hub
-        { x: 64, y: targetZone.y },          // along East spine to leisure branch
-        finalDest,                           // along branch into spot
+        { x: slot.x + 2.5, y: slot.y + 1.5 }, // Origin in cabin desk
+        { x: 20, y: slot.y },                // Step onto West spine
+        { x: 20, y: 36 },                    // Up West spine to Express Bypass Line
+        { x: 64, y: 36 },                    // Glide across Express Bypass above Vault
+        { x: 64, y: targetZone.y },          // Along East spine to target lounge
+        finalDest,                           // Enter lounge spot
       ];
     }
 
-    // Case 3: Destination is Leisure and Origin is Leisure
+    // From Knowledge Vault at Center Bottom
+    if (fromSpot === 'knowledge') {
+      return [
+        { x: 50, y: 82 },
+        { x: 64, y: 82 },
+        { x: 64, y: targetZone.y },
+        finalDest,
+      ];
+    }
+
+    // Between two East Campus recreation spots
     const fromZone = LEISURE_ZONES[fromSpot as LeisureActivity] || LEISURE_ZONES.coffee;
     const fromPos = { x: fromZone.x + offsetX, y: fromZone.y + offsetY };
 
@@ -292,37 +368,74 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     ];
   };
 
-  // Ambient wandering: every 6 seconds, pick an untasked bot to wander along the line
+  // =========================================================================
+  // INDEPENDENT ASYNCHRONOUS WANDERING PER BOT (12s to 45s STAGGERED INTERVALS)
+  // Bots roam freely across all leisure zones & Knowledge Vault anytime!
+  // =========================================================================
   useEffect(() => {
-    if (isProjectStopped || activeConstruction || activeDemolition) return;
+    const timers: Record<string, ReturnType<typeof setTimeout>> = {};
 
-    const interval = setInterval(() => {
-      const untaskedBots = bots.filter((b) => !builtCabins[b.id] && b.status !== 'working' && !botTransitPaths[b.id]);
-      if (untaskedBots.length === 0) return;
+    const scheduleNextWander = (botId: string) => {
+      // Randomized timestamp between 12s and 45s per bot
+      const randomDelay = Math.floor(Math.random() * (45000 - 12000)) + 12000;
 
-      const randomBot = untaskedBots[Math.floor(Math.random() * untaskedBots.length)];
-      const activities: LeisureActivity[] = ['coffee', 'arcade', 'tv', 'water_cooler', 'library'];
-      const nextActivity = activities[Math.floor(Math.random() * activities.length)];
+      timers[botId] = setTimeout(() => {
+        const isAssigned = Boolean(builtCabins[botId]);
+        const isBusyWithCrew = activeConstruction?.botId === botId || activeDemolition?.botId === botId;
+        const isMoving = Boolean(botTransitPaths[botId]);
 
-      const currentSpot = prevSpotRef.current[randomBot.id] || 'coffee';
-      const botIndex = bots.findIndex((b) => b.id === randomBot.id);
-      const waypoints = computeWaypointsAlongLine(currentSpot, nextActivity, botIndex);
+        if (!isAssigned && !isBusyWithCrew && !isMoving) {
+          const activities: LeisureActivity[] = [
+            'coffee',
+            'arcade',
+            'gpu_spa',
+            'dj_lounge',
+            'tv',
+            'water_cooler',
+            'knowledge',
+          ];
+          const currentSpot = prevSpotRef.current[botId] || botLeisureSpots[botId] || 'coffee';
+          const candidates = activities.filter((a) => a !== currentSpot);
+          const nextActivity = candidates[Math.floor(Math.random() * candidates.length)] || 'coffee';
 
-      prevSpotRef.current[randomBot.id] = nextActivity;
+          const botIndex = bots.findIndex((b) => b.id === botId);
+          const waypoints = computeWaypointsAlongLine(currentSpot, nextActivity, botIndex);
 
-      setBotTransitPaths((prev) => ({
-        ...prev,
-        [randomBot.id]: waypoints,
-      }));
+          prevSpotRef.current[botId] = nextActivity;
 
-      setBotLeisureSpots((prev) => ({
-        ...prev,
-        [randomBot.id]: nextActivity,
-      }));
-    }, 6000);
+          setBotTransitPaths((prev) => ({
+            ...prev,
+            [botId]: waypoints,
+          }));
 
-    return () => clearInterval(interval);
-  }, [bots, builtCabins, isProjectStopped, activeConstruction, activeDemolition, botTransitPaths]);
+          setBotLeisureSpots((prev) => ({
+            ...prev,
+            [botId]: nextActivity,
+          }));
+
+          // Remove transit path strictly after full movement finishes (3.2s animation + 200ms buffer)
+          setTimeout(() => {
+            setBotTransitPaths((prev) => {
+              const next = { ...prev };
+              delete next[botId];
+              return next;
+            });
+          }, 3400);
+        }
+
+        // Schedule subsequent wandering loop
+        scheduleNextWander(botId);
+      }, randomDelay);
+    };
+
+    bots.forEach((bot) => {
+      scheduleNextWander(bot.id);
+    });
+
+    return () => {
+      Object.values(timers).forEach(clearTimeout);
+    };
+  }, [bots, builtCabins, activeConstruction, activeDemolition]);
 
   // =========================================================================
   // TASK ASSIGNMENT SEQUENTIAL FLOW (Bob builds FIRST -> then Bot travels)
@@ -396,6 +509,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     }, 2800);
 
     // STEP 5: Bot arrives at desk, locks file, and gets seated
+    // Transit duration is 3.2s (3200ms). Step 4 is at 2800ms -> Step 5 fires at 2800 + 3400 = 6200ms!
     setTimeout(async () => {
       await assignFileToBot(fileId, targetBot.id, targetBot.name);
       prevSpotRef.current[targetBot.id] = `cabin-${openSlot.id}`;
@@ -413,7 +527,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       if (selectedBotForBrief?.id === botId) {
         setSelectedBotForBrief(null);
       }
-    }, 5200);
+    }, 6200);
   };
 
   // =========================================================================
@@ -453,7 +567,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       [botId]: waypoints,
     }));
 
-    // STEP 2: Bot safely arrives at chill spot (after 2400ms); Rex leaves depot directly to cabin
+    // STEP 2: Bot safely arrives at chill spot (after 3400ms); Rex leaves depot directly to cabin
     setTimeout(() => {
       setBotLeisureSpots((prev) => ({
         ...prev,
@@ -471,13 +585,13 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       setRexStatus('traveling');
       setRexPos({ x: slot.x, y: slot.y });
       setRexSpeech(`🚜 Rex: En route to demolish ${slot.name}!`);
-    }, 2400);
+    }, 3400);
 
     // STEP 3: Rex arrives and demolishes the office
     setTimeout(() => {
       setRexStatus('demolishing');
       setRexSpeech(`💥 Demolishing studio! ${botName} safely chilled.`);
-    }, 3200);
+    }, 4200);
 
     // STEP 4: Rex finishes demolition and returns to depot
     setTimeout(async () => {
@@ -487,7 +601,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
       setVacatingCabinSlot(null);
       await unassignFile(fileId);
-    }, 4400);
+    }, 5400);
 
     // STEP 5: Rex arrives back at depot
     setTimeout(() => {
@@ -499,7 +613,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       if (selectedBotForBrief?.id === botId) {
         setSelectedBotForBrief(null);
       }
-    }, 5200);
+    }, 6200);
   };
 
   // Get current waypoint array for rendering bot position / animation
@@ -516,15 +630,17 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       return [{ x: slot.x + 2.5, y: slot.y + 1.5 }];
     }
 
-    // Default resting spot in leisure campus
+    // Default resting spot in leisure campus or Knowledge Vault
     const currentActivity = botLeisureSpots[bot.id] || (
-      index % 5 === 0 ? 'coffee' :
-      index % 5 === 1 ? 'arcade' :
-      index % 5 === 2 ? 'tv' :
-      index % 5 === 3 ? 'water_cooler' : 'library'
+      index % 7 === 0 ? 'coffee' :
+      index % 7 === 1 ? 'arcade' :
+      index % 7 === 2 ? 'gpu_spa' :
+      index % 7 === 3 ? 'dj_lounge' :
+      index % 7 === 4 ? 'knowledge' :
+      index % 7 === 5 ? 'tv' : 'water_cooler'
     );
 
-    const zone = LEISURE_ZONES[currentActivity];
+    const zone = LEISURE_ZONES[currentActivity] || LEISURE_ZONES.coffee;
     const offsetX = ((index % 3) - 1) * 3.5;
     const offsetY = Math.floor(index / 3) * 2.8;
 
@@ -629,19 +745,19 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       </div>
 
       {/* Draggable & Pannable Interactive Free-Look Canvas Viewport */}
-      <div className="relative w-full h-[680px] overflow-hidden cursor-grab active:cursor-grabbing bg-[var(--bg-app)]">
+      <div className="relative w-full h-[720px] overflow-hidden cursor-grab active:cursor-grabbing bg-[var(--bg-app)]">
         <motion.div
           drag
           dragElastic={0.08}
           dragConstraints={{ left: -400, right: 400, top: -240, bottom: 240 }}
           style={{ scale: canvasScale, x: canvasPan.x, y: canvasPan.y }}
-          className="relative w-[1440px] h-[800px] mx-auto origin-center transition-transform"
+          className="relative w-[1440px] h-[860px] mx-auto origin-center transition-transform"
         >
           {/* Blueprint Grid Background */}
           <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.07] bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
           {/* ============================================================ */}
-          {/* SIMPLE SINGLE LIGHT GREEN TRANSIT LINE (CLEAN SVG)           */}
+          {/* COMPLETE LIGHT GREEN TRANSIT NETWORK (WITH EXPRESS BYPASS)   */}
           {/* ============================================================ */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
             <defs>
@@ -653,7 +769,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
             {/* Soft Ambient Underglow */}
             <path
-              d="M 172 200 L 403 200 M 172 432 L 403 432 M 172 656 L 403 656 M 288 200 L 288 656 M 288 432 L 920 432 M 920 200 L 920 656 M 920 200 L 1296 200 M 920 432 L 1166 432 M 920 656 L 1296 656"
+              d="M 172 198 L 403 198 M 172 455 L 403 455 M 172 705 L 403 705 M 288 198 L 288 705 M 288 310 L 920 310 M 288 455 L 920 455 M 720 455 L 720 705 M 920 198 L 920 705 M 920 198 L 1296 198 M 920 455 L 1296 455 M 920 705 L 1296 705"
               stroke="rgba(52, 211, 153, 0.2)"
               strokeWidth="6"
               strokeLinecap="round"
@@ -663,7 +779,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
             {/* Single Clean Light Green Line */}
             <path
-              d="M 172 200 L 403 200 M 172 432 L 403 432 M 172 656 L 403 656 M 288 200 L 288 656 M 288 432 L 920 432 M 920 200 L 920 656 M 920 200 L 1296 200 M 920 432 L 1166 432 M 920 656 L 1296 656"
+              d="M 172 198 L 403 198 M 172 455 L 403 455 M 172 705 L 403 705 M 288 198 L 288 705 M 288 310 L 920 310 M 288 455 L 920 455 M 720 455 L 720 705 M 920 198 L 920 705 M 920 198 L 1296 198 M 920 455 L 1296 455 M 920 705 L 1296 705"
               stroke="#34d399"
               strokeWidth="2.5"
               strokeLinecap="round"
@@ -673,21 +789,32 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             />
 
             {/* Sleek Junction Waypoint Dots */}
-            <circle cx="288" cy="432" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="720" cy="432" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="920" cy="432" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="1036" cy="200" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1296" cy="200" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1166" cy="432" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="1036" cy="656" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1296" cy="656" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            {/* Express Cabin-to-Chill Bypass Junctions (SS1 fix) */}
+            <circle cx="288" cy="310" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="920" cy="310" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+
+            {/* Concourse & Central Vault Junctions */}
+            <circle cx="288" cy="455" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="720" cy="455" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="920" cy="455" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+
+            {/* Center Bottom Knowledge Vault Junction (SS2 fix) */}
+            <circle cx="720" cy="705" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+
+            {/* East Campus Recreation Junctions */}
+            <circle cx="1036" cy="198" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="198" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1036" cy="455" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="455" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1036" cy="705" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="705" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
           </svg>
 
           {/* Central Colony Concourse Label */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[var(--bg-panel)]/80 backdrop-blur-sm px-4 py-1.5 rounded-full border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-muted)] z-10 shadow-sm">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[var(--bg-panel)]/80 backdrop-blur-sm px-4 py-1 rounded-full border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-muted)] z-10 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
             <span className="font-bold text-[var(--text-main)]">Colony Transit Network</span>
-            <span>(Cabins ↔ Vault ↔ Recreation Campus)</span>
+            <span>(Cabins ↔ Express Line ↔ Vault ↔ Recreation)</span>
           </div>
 
           {/* ============================================================ */}
@@ -944,7 +1071,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                   )}
                 </div>
 
-                {/* Desk Furniture or File Task */}
+                {/* Desk Furniture or File Task (NO duplicate static BotFace image per SS3) */}
                 {assignedBot && assignedFile && !isVacating ? (
                   <div className="flex-1 flex flex-col items-center justify-center my-1 bg-[var(--bg-panel)] rounded-xl p-2 border border-[var(--border-subtle)] shadow-inner">
                     <div className="flex items-center gap-1.5 mb-1 max-w-full">
@@ -954,32 +1081,29 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                       </span>
                     </div>
 
+                    {/* Developer Info Tag (Duplicate static face removed per user feedback in SS3) */}
                     <div
                       onClick={() => setSelectedBotForBrief(assignedBot)}
-                      className="flex items-center gap-2 mt-1 cursor-pointer hover:opacity-80 transition-opacity"
+                      className="flex items-center justify-between w-full mt-0.5 px-2 py-1 rounded-lg bg-[var(--bg-card)] border border-[var(--border-subtle)] cursor-pointer hover:border-emerald-500 transition-colors"
                       title="Click to view bot dossier"
                     >
-                      <BotFace
-                        shape={assignedBot.avatarShape || 'squircle'}
-                        color={assignedBot.avatarColor || '#10b981'}
-                        status={assignedBot.status}
-                        emote="lightbulb"
-                        size={28}
-                        showEmoteBadge={false}
-                      />
-                      <div className="text-left">
-                        <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: assignedBot.avatarColor || '#10b981' }}
+                        />
+                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 font-mono truncate">
                           {assignedBot.name}
-                        </div>
-                        <div className="text-[9px] text-[var(--text-muted)] capitalize">
-                          {assignedBot.role}
-                        </div>
+                        </span>
                       </div>
+                      <span className="text-[9px] text-[var(--text-muted)] capitalize shrink-0 font-mono">
+                        {assignedBot.role}
+                      </span>
                     </div>
 
                     <button
                       onClick={() => handleUnassignTask(assignedFile.id)}
-                      className="mt-2 text-[10px] text-rose-500 hover:text-rose-400 font-bold underline font-mono transition-colors"
+                      className="mt-1.5 text-[10px] text-rose-500 hover:text-rose-400 font-bold underline font-mono transition-colors"
                       title="Relieve bot to leisure campus & call Rex to demolish cabin"
                     >
                       (Relieve Bot / Demolish)
@@ -1017,7 +1141,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           {/* Live App Monitor Billboard (Top Center) */}
           <div
             onClick={() => setShowWallMonitorModal(true)}
-            style={{ left: '50%', top: '18%' }}
+            style={{ left: '50%', top: '17%' }}
             className="absolute -translate-x-1/2 -translate-y-1/2 w-80 h-28 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 shadow-xl hover:border-emerald-500 cursor-pointer transition-all group z-20"
           >
             <div className="flex items-center justify-between text-[11px] font-mono mb-1 text-[var(--text-muted)]">
@@ -1038,7 +1162,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
           {/* Central Memory Box Code Vault (Center Spine) */}
           <div
-            style={{ left: '50%', top: '54%' }}
+            style={{ left: '50%', top: '53%' }}
             className={`absolute -translate-x-1/2 -translate-y-1/2 w-80 p-4 rounded-3xl border-2 shadow-2xl transition-all z-20 flex flex-col gap-2.5 ${
               !activeProject
                 ? 'bg-[var(--bg-card)]/95 border-amber-500/60 shadow-amber-500/10'
@@ -1134,17 +1258,53 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           </div>
 
           {/* ============================================================ */}
-          {/* RIGHT SIDE: 5 RECREATION & LEISURE ACTIVITY ZONES            */}
+          {/* CENTER BOTTOM: KNOWLEDGE VAULT TERMINAL (MOVED PER SS2)       */}
+          {/* ============================================================ */}
+          <div
+            onClick={() => setShowKnowledgeModal(true)}
+            style={{ left: '50%', top: '82%' }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 w-80 h-36 rounded-3xl bg-[var(--bg-card)] border-2 border-emerald-500/40 p-3.5 flex flex-col justify-between shadow-xl cursor-pointer hover:border-emerald-500 transition-colors group z-20"
+            title="Click to inspect project knowledge base"
+          >
+            <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
+              <div className="flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-emerald-500" />
+                <span>Knowledge Vault Terminal</span>
+              </div>
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                {activeProject?.knowledgeBase?.length || 0} Docs
+              </span>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-1">
+              <div className="text-3xl opacity-80 mb-0.5 group-hover:scale-110 transition-transform">
+                📚 📖
+              </div>
+              <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                {activeProject?.knowledgeBase?.length
+                  ? `${activeProject.knowledgeBase.length} docs indexed • Click to read`
+                  : 'Click to inspect or link knowledge'}
+              </span>
+            </div>
+
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
+              <span>Station: 📚 Vault Terminal</span>
+              <span className="font-bold">AES-256 Storage</span>
+            </div>
+          </div>
+
+          {/* ============================================================ */}
+          {/* RIGHT SIDE: 6 RECREATION & LEISURE ACTIVITY ZONES            */}
           {/* ============================================================ */}
           <div className="absolute top-4 right-8 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-2 z-10">
             <Coffee className="w-4 h-4 text-amber-500" />
-            <span>RECREATION & LEISURE CAMPUS (5 SPOTS)</span>
+            <span>RECREATION & LEISURE CAMPUS (6 SPOTS)</span>
           </div>
 
           {/* Zone 1: Coffee Barista Lounge */}
           <div
             style={{ left: `${LEISURE_ZONES.coffee.x}%`, top: `${LEISURE_ZONES.coffee.y}%` }}
-            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+            className="absolute w-52 h-38 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -1165,7 +1325,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           {/* Zone 2: 8-Bit Arcade Playground */}
           <div
             style={{ left: `${LEISURE_ZONES.arcade.x}%`, top: `${LEISURE_ZONES.arcade.y}%` }}
-            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+            className="absolute w-52 h-38 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -1183,34 +1343,52 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             </div>
           </div>
 
-          {/* Zone 3: Knowledge Vault & Library */}
+          {/* Zone 3: GPU Overclock Sauna & Thermal Spa (NEW Bot Area) */}
           <div
-            onClick={() => setShowKnowledgeModal(true)}
-            style={{ left: `${LEISURE_ZONES.library.x}%`, top: `${LEISURE_ZONES.library.y}%` }}
-            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border-2 border-emerald-500/40 p-3.5 flex flex-col justify-between shadow-xl cursor-pointer hover:border-emerald-500 transition-colors group z-10"
+            style={{ left: `${LEISURE_ZONES.gpu_spa.x}%`, top: `${LEISURE_ZONES.gpu_spa.y}%` }}
+            className="absolute w-52 h-38 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-rose-500/30 p-3 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
-                {LEISURE_ZONES.library.icon}
-                <span>Knowledge Vault</span>
+                {LEISURE_ZONES.gpu_spa.icon}
+                <span>GPU Overclock Spa</span>
               </div>
-              <BookOpen className="w-3.5 h-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
+              <span className="text-[9px] font-mono text-rose-400">Thermal</span>
             </div>
             <div className="flex-1 flex items-center justify-center text-3xl opacity-75">
-              📚 📖
+              🧖‍♂️ ♨️
             </div>
-            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
-              <span className="truncate">
-                {activeProject?.knowledgeBase?.length ? `${activeProject.knowledgeBase.length} docs loaded` : 'Click to inspect docs'}
-              </span>
-              <span className="font-bold shrink-0">📚 Terminal</span>
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
+              <span className="truncate">{LEISURE_ZONES.gpu_spa.desc}</span>
+              <span className="text-rose-400 shrink-0 font-bold">⚡ Spa</span>
             </div>
           </div>
 
-          {/* Zone 4: Chill TV Lounge */}
+          {/* Zone 4: Synthwave DJ Booth & Dancefloor (NEW Bot Area) */}
+          <div
+            style={{ left: `${LEISURE_ZONES.dj_lounge.x}%`, top: `${LEISURE_ZONES.dj_lounge.y}%` }}
+            className="absolute w-52 h-38 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-fuchsia-500/30 p-3 flex flex-col justify-between shadow-lg z-10"
+          >
+            <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
+              <div className="flex items-center gap-1.5">
+                {LEISURE_ZONES.dj_lounge.icon}
+                <span>Synthwave DJ Booth</span>
+              </div>
+              <span className="text-[9px] font-mono text-fuchsia-400">Synth</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-3xl opacity-75">
+              🎧 🪩
+            </div>
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
+              <span className="truncate">{LEISURE_ZONES.dj_lounge.desc}</span>
+              <span className="text-fuchsia-400 shrink-0 font-bold">🪩 Stage</span>
+            </div>
+          </div>
+
+          {/* Zone 5: Chill TV Lounge */}
           <div
             style={{ left: `${LEISURE_ZONES.tv.x}%`, top: `${LEISURE_ZONES.tv.y}%` }}
-            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+            className="absolute w-52 h-38 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -1228,10 +1406,10 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             </div>
           </div>
 
-          {/* Zone 5: Water Cooler Chat Hub */}
+          {/* Zone 6: Water Cooler Chat Hub */}
           <div
             style={{ left: `${LEISURE_ZONES.water_cooler.x}%`, top: `${LEISURE_ZONES.water_cooler.y}%` }}
-            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+            className="absolute w-52 h-38 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -1280,7 +1458,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                   top: waypoints.map((p) => `${p.y}%`),
                 }}
                 transition={{
-                  duration: Math.max(2.4, waypoints.length * 0.7),
+                  duration: TRANSIT_ANIMATION_SECONDS,
                   ease: 'easeInOut',
                 }}
                 onClick={() => setSelectedBotForBrief(bot)}
