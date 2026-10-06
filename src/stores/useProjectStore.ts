@@ -182,15 +182,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   removeProject: async (id) => {
     await deleteProject(id);
-    set((state) => {
-      const remaining = state.projects.filter((p) => p.id !== id);
-      return {
-        projects: remaining,
-        activeProject: remaining.length > 0 ? remaining[0] : null,
-      };
+    const remaining = get().projects.filter((p) => p.id !== id);
+    const nextActive = remaining.length > 0 ? remaining[0] : null;
+    set({
+      projects: remaining,
+      activeProject: nextActive,
+      files: nextActive ? get().files : [],
+      activeLocks: nextActive ? get().activeLocks : {},
     });
-    if (get().activeProject) {
-      await get().loadFiles(get().activeProject!.id);
+    if (nextActive) {
+      await get().loadFiles(nextActive.id);
     }
   },
 

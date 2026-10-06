@@ -10,6 +10,7 @@ import {
   Activity,
   Sparkles,
   X,
+  Plus,
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useBotStore } from '../../stores/useBotStore';
@@ -39,30 +40,14 @@ export const OfficeCanvas: React.FC = () => {
   const { bots } = useBotStore();
   const { setActiveView } = useUIStore();
 
-  if (!activeProject) {
-    return (
-      <div className="max-w-4xl mx-auto py-16 px-4 text-center">
-        <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-slate-200">No Active Project</h2>
-        <p className="text-xs text-slate-400 mt-1 mb-4">
-          Select or create a project to launch the multi-model office.
-        </p>
-        <button
-          onClick={() => setActiveView('projects')}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold"
-        >
-          View Projects
-        </button>
-      </div>
-    );
-  }
+  // Find bots belonging to this project (or all bots in standby)
+  const projectBots = activeProject
+    ? bots.filter((b) => activeProject.botIds.includes(b.id))
+    : bots;
 
-  // Find bots belonging to this project
-  const projectBots = bots.filter((b) => activeProject.botIds.includes(b.id));
-
-  const isRunning = activeProject.status === 'running';
-  const isCompleted = activeProject.status === 'completed';
-  const isPaused = activeProject.status === 'paused';
+  const isRunning = Boolean(activeProject && activeProject.status === 'running');
+  const isCompleted = Boolean(activeProject && activeProject.status === 'completed');
+  const isPaused = Boolean(activeProject && activeProject.status === 'paused');
 
   return (
     <div className="max-w-[1600px] mx-auto p-4 flex flex-col gap-4 min-h-[calc(100vh-65px)]">
@@ -71,7 +56,7 @@ export const OfficeCanvas: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-base font-bold text-[var(--text-main)] m-0 tracking-tight">
-              {activeProject.name}
+              {activeProject ? activeProject.name : 'OpenScreens Colony Office'}
             </h1>
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${
@@ -81,30 +66,46 @@ export const OfficeCanvas: React.FC = () => {
                   ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
                   : isPaused
                   ? 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20'
+                  : !activeProject
+                  ? 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20'
                   : 'bg-[var(--bg-elevated)] text-[var(--text-muted)] border-[var(--border-strong)]'
               }`}
             >
-              {activeProject.status.toUpperCase()}
+              {activeProject ? activeProject.status.toUpperCase() : 'STANDBY • NO PROJECT'}
             </span>
-            {projectBots.some((b) => b.provider !== 'mock') ? (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                Live Real AI Mode
-              </span>
+            {activeProject ? (
+              projectBots.some((b) => b.provider !== 'mock') ? (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  Live Real AI Mode
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
+                  Demo Mode (Zero Cost)
+                </span>
+              )
             ) : (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
-                Demo Mode (Zero Cost)
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                All Bots Chilling
               </span>
             )}
           </div>
           <p className="text-xs text-[var(--text-muted)] mt-0.5 max-w-2xl line-clamp-1">
-            <strong>Goal:</strong> {activeProject.goal}
+            {activeProject ? (
+              <>
+                <strong>Goal:</strong> {activeProject.goal}
+              </>
+            ) : (
+              'Vault locked & offices closed. All bots chilling in leisure campus. Create or select a project to begin work.'
+            )}
           </p>
         </div>
 
         {/* Turn Meter & Action Controls */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* Turn counter meter with +10 Turns extension and explanation tooltip */}
+          {activeProject ? (
+            <>
+              {/* Turn counter meter with +10 Turns extension and explanation tooltip */}
           <div className="bg-[var(--bg-panel)] px-3 py-1.5 rounded-xl border border-[var(--border-subtle)] text-xs font-mono flex items-center gap-2 shadow-sm">
             <span
               className="text-[var(--text-muted)] cursor-help flex items-center gap-1"
@@ -153,6 +154,18 @@ export const OfficeCanvas: React.FC = () => {
             >
               <Square className="w-3.5 h-3.5 fill-current" />
             </button>
+          </div>
+        </>
+      ) : (
+          <button
+            onClick={() => setActiveView('projects')}
+            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02]"
+            title="Create or select a project"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create / Select Project</span>
+          </button>
+        )}
 
             {/* Ask T-40 Guide button */}
             <button
@@ -185,7 +198,6 @@ export const OfficeCanvas: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
 
       {/* Mobile View Switcher Tabs (Phones & Small Tablets) */}
       <div className="flex lg:hidden items-center justify-between bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-1 gap-1 shadow-sm">

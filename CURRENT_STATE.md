@@ -1,20 +1,20 @@
 # OpenScreens Current Summary
 
 - **Live Site**: https://justkrisjust.github.io/openscreens/
-- **Architecture**: Minimalist Light Green Transit Line + Line-Following Bot Movement + Equal-Height 3-Column Workspace + Bot Dossier & Compatibility Selector
+- **Architecture**: Bob & Rex Top-Left Crew Cells + Sequential Construction/Demolition Workflows + Transit Line Pathfinding + Zero-Project Standby Mode
 - **Guide Companion**: T-40 (Out of the box)
 
 ## Recent Completed Changes
-1. **Equal-Height Lower Workspace (SS1 Fix)**:
-   - Fixed `EventFeed.tsx`: Changed from fixed `h-44` to `h-full`, matching `MemoryBox` and `DirectorChat` (all columns `h-[500px]` with inner flex-1 overflow).
-   - Fixed `DirectorChat.tsx`: Removed `max-h-[260px]` ceiling, redesigned header into a clean non-wrapped layout with compact Target dropdown below.
-2. **Simple Light Green Transit Line (SS2 Fix A)**:
-   - Removed heavy railway sleepers and duplicate track layers in `VirtualOfficeFloor.tsx`. Replaced with a single, sleek, glowing light-green line (`#34d399`) with subtle dot waypoint nodes at junctions.
-   - Built transit waypoint routing (`computeWaypointsAlongLine`): Bots now follow the light green line step-by-step instead of jumping diagonally across empty space.
-3. **Interactive Bot Dossier / Brief Modal (SS2 Fix B)**:
-   - Added interactive Bot Dossier modal on clicking any bot on the canvas.
-   - Displays avatar face with active emote, role, model/provider, current location/assignment (with quick relieve/assign actions), token usage bar, recent telemetry log, and pause/resume button.
-4. **Compatibility Check Bot Selector with `+` Symbol**:
-   - Added candidate bots selector bar with selected bot avatar chips and `+` button in `CompatibilityModal.tsx`.
-   - Users can click `+` to open an interactive checklist of all bots to test custom subsets for compatibility.
-5. **Verification**: 18/18 Vitest unit tests passing, production build 100% clean, zero security issues.
+1. **Option to Delete Projects & Zero-Projects State**:
+   - `ProjectsView.tsx`: Removed `projects.length > 1` limitation. Users can delete any project down to 0, with a clean zero-project empty state and quick `[+ Create First Project]` button.
+   - `OfficeCanvas.tsx`: Removed blocking empty view when `!activeProject`. Renders the living office floor in Standby Mode with status pill `STANDBY • NO PROJECT`.
+   - `MemoryBox.tsx`: Displays locked vault view (`🔒 Shared Memory Vault Locked`) when no project is active.
+2. **Bob & Rex Top-Left Workshop Cells**:
+   - Placed Bob's Workshop at `x: 12%, y: 9%` and Rex's Demolition Depot at `x: 28%, y: 9%`.
+   - Both crew members reside in their cells when idle with live status indicators and interactive cartoon speech bubbles.
+   - If user attempts to build an office without an active project, Bob speaks from his cell: *"Vault not open to build office! Create or select a project first."*
+3. **Sequential Flow Check (Critical)**:
+   - **Task Assignment**: Bob dispatches directly from his cell -> hammers & builds cabin -> returns to cell -> cabin visibly ready -> only then does the bot leave the chill zone and walk **along the green transit line** to its office desk.
+   - **Task Release**: Bot leaves office desk **along the green transit line** to the leisure lounge -> only after bot safely arrives does Rex dispatch from his cell directly to the cabin -> Rex demolishes studio -> returns to depot.
+   - **Transit Line Rule**: Bots strictly route along light green transit line corridors (`computeWaypointsAlongLine`); Bob and Rex fly directly without using transit lines.
+4. **Verification**: 18/18 Vitest tests passing, production build 100% clean, zero security issues.

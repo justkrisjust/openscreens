@@ -399,55 +399,74 @@ export const ProjectsView: React.FC = () => {
 
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map((proj) => {
-          const assignedBots = bots.filter((b) => proj.botIds.includes(b.id));
-          const isActive = activeProject?.id === proj.id;
-          const kbCount = proj.knowledgeBase?.length || 0;
-
-          return (
-            <div
-              key={proj.id}
-              className={`bg-[var(--bg-card)] border rounded-2xl p-5 transition-all flex flex-col justify-between shadow-sm ${
-                isActive
-                  ? 'border-emerald-500/60 shadow-md shadow-emerald-500/10'
-                  : 'border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
-              }`}
+        {projects.length === 0 ? (
+          <div className="col-span-full py-16 text-center border-2 border-dashed border-[var(--border-subtle)] rounded-3xl bg-[var(--bg-card)]/50 p-8 flex flex-col items-center justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center mb-4 text-2xl">
+              📁
+            </div>
+            <h3 className="text-base font-semibold text-[var(--text-main)] mb-1">No Projects Found</h3>
+            <p className="text-xs text-[var(--text-muted)] max-w-sm mb-6 leading-relaxed">
+              All project offices and memory vaults are closed on the canvas. Create a project to open the vault and assign bots.
+            </p>
+            <button
+              onClick={() => setIsCreating(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02]"
             >
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
-                      <FolderGit2 className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-[var(--text-main)]">{proj.name}</h3>
-                      <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-0.5">
-                        <span className="font-mono">Turns: {proj.currentTurn} / {proj.maxTurns}</span>
-                        <span>•</span>
-                        <span className="capitalize">{proj.status}</span>
+              <Plus className="w-4 h-4" /> Create First Project
+            </button>
+          </div>
+        ) : (
+          projects.map((proj) => {
+            const assignedBots = bots.filter((b) => proj.botIds.includes(b.id));
+            const isActive = activeProject?.id === proj.id;
+            const kbCount = proj.knowledgeBase?.length || 0;
+
+            return (
+              <div
+                key={proj.id}
+                className={`bg-[var(--bg-card)] border rounded-2xl p-5 transition-all flex flex-col justify-between shadow-sm ${
+                  isActive
+                    ? 'border-emerald-500/60 shadow-md shadow-emerald-500/10'
+                    : 'border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                        <FolderGit2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-[var(--text-main)]">{proj.name}</h3>
+                        <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-0.5">
+                          <span className="font-mono">Turns: {proj.currentTurn} / {proj.maxTurns}</span>
+                          <span>•</span>
+                          <span className="capitalize">{proj.status}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => openEditModal(proj)}
-                      className="p-1.5 text-[var(--text-muted)] hover:text-emerald-500 rounded-lg transition-colors"
-                      title="Edit project settings, bots, and knowledge"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    {projects.length > 1 && (
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={() => removeProject(proj.id)}
+                        onClick={() => openEditModal(proj)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-emerald-500 rounded-lg transition-colors"
+                        title="Edit project settings, bots, and knowledge"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Are you sure you want to delete project "${proj.name}"?`)) {
+                            removeProject(proj.id);
+                          }
+                        }}
                         className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 rounded-lg transition-colors"
                         title="Delete project"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
-                    )}
+                    </div>
                   </div>
-                </div>
 
                 <p className="text-xs text-[var(--text-muted)] line-clamp-2 leading-relaxed mb-3">
                   {proj.goal}
@@ -505,7 +524,7 @@ export const ProjectsView: React.FC = () => {
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
       {/* Edit Project Modal */}

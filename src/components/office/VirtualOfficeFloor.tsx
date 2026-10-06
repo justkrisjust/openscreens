@@ -56,7 +56,7 @@ const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
     name: 'Coffee Barista Lounge',
     icon: <Coffee className="w-4 h-4 text-amber-500" />,
     x: 72,
-    y: 22,
+    y: 25,
     desc: 'Sipping espresso & recharging energy',
     emote: 'coffee',
     stationName: '☕ Coffee Station',
@@ -66,7 +66,7 @@ const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
     name: '8-Bit Arcade Playground',
     icon: <Gamepad2 className="w-4 h-4 text-violet-400" />,
     x: 90,
-    y: 22,
+    y: 25,
     desc: 'Testing reflexes with retro games',
     emote: 'stars',
     stationName: '🕹️ Arcade Depot',
@@ -76,7 +76,7 @@ const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
     name: 'Knowledge Vault & Library',
     icon: <BookOpen className="w-4 h-4 text-emerald-500" />,
     x: 81,
-    y: 52,
+    y: 54,
     desc: 'Reading project specs & documentation',
     emote: 'lightbulb',
     stationName: '📚 Vault Terminal',
@@ -112,10 +112,10 @@ interface CabinSlot {
 }
 
 const CABIN_SLOTS: CabinSlot[] = [
-  { id: 0, name: 'Studio Pod Alpha', x: 12, y: 22 },
-  { id: 1, name: 'Studio Pod Beta', x: 28, y: 22 },
-  { id: 2, name: 'Studio Pod Gamma', x: 12, y: 52 },
-  { id: 3, name: 'Studio Pod Delta', x: 28, y: 52 },
+  { id: 0, name: 'Studio Pod Alpha', x: 12, y: 25 },
+  { id: 1, name: 'Studio Pod Beta', x: 28, y: 25 },
+  { id: 2, name: 'Studio Pod Gamma', x: 12, y: 54 },
+  { id: 3, name: 'Studio Pod Delta', x: 28, y: 54 },
   { id: 4, name: 'Studio Pod Epsilon', x: 12, y: 82 },
   { id: 5, name: 'Studio Pod Zeta', x: 28, y: 82 },
 ];
@@ -147,7 +147,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   // Passive ambient wandering spots for untasked bots
   const [botLeisureSpots, setBotLeisureSpots] = useState<Record<string, LeisureActivity>>({});
 
-  // Dynamic Office Cabins: botId -> { slotIndex: number, file: VirtualFile }
+  // Dynamic Office Cabins: botId -> { slot: number, file: VirtualFile }
   const [builtCabins, setBuiltCabins] = useState<Record<string, { slot: number; file: VirtualFile }>>({});
 
   // Track waypoint paths for bots so they follow the green line instead of jumping diagonally
@@ -156,9 +156,43 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   >({});
   const prevSpotRef = useRef<Record<string, LeisureActivity | string>>({});
 
-  // Animations for Bob (Creator) & Rex (Destroyer)
-  const [creatorBotState, setCreatorBotState] = useState<{ active: boolean; targetBotName: string; targetSlot: number } | null>(null);
-  const [destroyerBotState, setDestroyerBotState] = useState<{ active: boolean; targetBotName: string; targetSlot: number } | null>(null);
+  // Active Construction State (Two-step flow: Bob builds first -> then Bot travels along line)
+  const [activeConstruction, setActiveConstruction] = useState<{
+    botId: string;
+    botName: string;
+    fileId: string;
+    slotIndex: number;
+    stage: 'bob_traveling' | 'bob_building' | 'bob_returning' | 'bot_traveling';
+  } | null>(null);
+
+  // Active Demolition State (Two-step flow: Bot leaves first -> then Rex demolishes office)
+  const [activeDemolition, setActiveDemolition] = useState<{
+    botId: string;
+    botName: string;
+    fileId: string;
+    slotIndex: number;
+    stage: 'bot_leaving' | 'rex_traveling' | 'rex_demolishing' | 'rex_returning';
+  } | null>(null);
+
+  // Tentative cabin visibly standing while bot is in transit
+  const [tentativeCabin, setTentativeCabin] = useState<{
+    slotIndex: number;
+    file: VirtualFile;
+    botId: string;
+  } | null>(null);
+
+  // Vacating cabin slot while bot is walking to leisure zone
+  const [vacatingCabinSlot, setVacatingCabinSlot] = useState<number | null>(null);
+
+  // Bob's Workshop Cell State (Top-Left cell at x: 12%, y: 9%)
+  const [bobPos, setBobPos] = useState<{ x: number; y: number }>({ x: 12, y: 9 });
+  const [bobStatus, setBobStatus] = useState<'idle' | 'traveling' | 'building' | 'returning'>('idle');
+  const [bobSpeech, setBobSpeech] = useState<string | null>(null);
+
+  // Rex's Demolition Depot Cell State (Top-Left cell at x: 28%, y: 9%)
+  const [rexPos, setRexPos] = useState<{ x: number; y: number }>({ x: 28, y: 9 });
+  const [rexStatus, setRexStatus] = useState<'idle' | 'traveling' | 'demolishing' | 'returning'>('idle');
+  const [rexSpeech, setRexSpeech] = useState<string | null>(null);
 
   const isProjectStopped = activeProject?.status === 'idle';
 
@@ -179,33 +213,66 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     setBuiltCabins(nextCabins);
   }, [files]);
 
-  // Generate waypoint route along the transit line between two spots
+  // Generate waypoint route strictly along the light green transit line
   const computeWaypointsAlongLine = (
     fromSpot: LeisureActivity | string,
-    toSpot: LeisureActivity,
+    toSpot: LeisureActivity | string,
     index: number
   ): Array<{ x: number; y: number }> => {
-    const targetZone = LEISURE_ZONES[toSpot];
     const offsetX = ((index % 3) - 1) * 3.5;
     const offsetY = Math.floor(index / 3) * 2.8;
+
+    // Case 1: Destination is a Cabin Slot (e.g., 'cabin-0')
+    if (typeof toSpot === 'string' && toSpot.startsWith('cabin-')) {
+      const slotIndex = parseInt(toSpot.replace('cabin-', ''), 10) || 0;
+      const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
+      const targetDesk = { x: slot.x + 2.5, y: slot.y + 1.5 };
+
+      if (typeof fromSpot === 'string' && fromSpot.startsWith('cabin-')) {
+        const fromIndex = parseInt(fromSpot.replace('cabin-', ''), 10) || 0;
+        const fromSlot = CABIN_SLOTS[fromIndex] || CABIN_SLOTS[0];
+        return [
+          { x: fromSlot.x + 2.5, y: fromSlot.y + 1.5 },
+          { x: 20, y: fromSlot.y },
+          { x: 20, y: slot.y },
+          targetDesk,
+        ];
+      }
+
+      // From Leisure Lounge to Cabin desk along the green line:
+      const fromZone = LEISURE_ZONES[fromSpot as LeisureActivity] || LEISURE_ZONES.coffee;
+      const fromPos = { x: fromZone.x + offsetX, y: fromZone.y + offsetY };
+      return [
+        fromPos,
+        { x: 64, y: fromZone.y },   // step onto East spine corridor
+        { x: 64, y: 54 },           // walk down East spine to central concourse hub
+        { x: 50, y: 54 },           // cross central concourse past Vault
+        { x: 20, y: 54 },           // to West concourse hub
+        { x: 20, y: slot.y },       // along West spine to cabin row
+        targetDesk,                 // walk from spine into cabin desk
+      ];
+    }
+
+    // Case 2: Destination is a Leisure Spot
+    const targetZone = LEISURE_ZONES[toSpot as LeisureActivity] || LEISURE_ZONES.coffee;
     const finalDest = { x: targetZone.x + offsetX, y: targetZone.y + offsetY };
 
-    // If starting from an assigned cabin
-    if (fromSpot.startsWith('cabin-')) {
+    if (typeof fromSpot === 'string' && fromSpot.startsWith('cabin-')) {
+      // From Cabin desk to Leisure lounge along the green line:
       const slotIndex = parseInt(fromSpot.replace('cabin-', ''), 10) || 0;
       const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
       return [
-        { x: slot.x + 2.5, y: slot.y + 1.5 }, // origin in cabin desk
+        { x: slot.x + 2.5, y: slot.y + 1.5 }, // origin at cabin desk
         { x: 20, y: slot.y },                // walk to West spine
-        { x: 20, y: 56 },                    // down to West concourse hub
-        { x: 50, y: 56 },                    // across Central Vault
-        { x: 64, y: 56 },                    // to East Concourse hub
-        { x: 64, y: targetZone.y },          // vertical to destination branch
+        { x: 20, y: 54 },                    // to West concourse hub
+        { x: 50, y: 54 },                    // across central concourse past Vault
+        { x: 64, y: 54 },                    // to East concourse hub
+        { x: 64, y: targetZone.y },          // along East spine to leisure branch
         finalDest,                           // along branch into spot
       ];
     }
 
-    // Both spots are in East Campus (Leisure Zones)
+    // Case 3: Destination is Leisure and Origin is Leisure
     const fromZone = LEISURE_ZONES[fromSpot as LeisureActivity] || LEISURE_ZONES.coffee;
     const fromPos = { x: fromZone.x + offsetX, y: fromZone.y + offsetY };
 
@@ -213,26 +280,24 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       return [finalDest];
     }
 
-    // If on the exact same branch (e.g. coffee <-> arcade, or tv <-> water_cooler)
     if (fromZone.y === targetZone.y) {
       return [fromPos, finalDest];
     }
 
-    // Different branch: exit along branch to East corridor spine at x: 64%, walk along spine, enter target branch
     return [
-      fromPos,                             // current spot
-      { x: 64, y: fromZone.y },            // step onto East spine corridor
-      { x: 64, y: targetZone.y },          // walk along East corridor to target level
-      finalDest,                           // walk along branch into new spot
+      fromPos,
+      { x: 64, y: fromZone.y },
+      { x: 64, y: targetZone.y },
+      finalDest,
     ];
   };
 
-  // Ambient wandering: every 5.5 seconds, pick an untasked bot to wander along the line
+  // Ambient wandering: every 6 seconds, pick an untasked bot to wander along the line
   useEffect(() => {
-    if (isProjectStopped) return;
+    if (isProjectStopped || activeConstruction || activeDemolition) return;
 
     const interval = setInterval(() => {
-      const untaskedBots = bots.filter((b) => !builtCabins[b.id] && b.status !== 'working');
+      const untaskedBots = bots.filter((b) => !builtCabins[b.id] && b.status !== 'working' && !botTransitPaths[b.id]);
       if (untaskedBots.length === 0) return;
 
       const randomBot = untaskedBots[Math.floor(Math.random() * untaskedBots.length)];
@@ -254,49 +319,112 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
         ...prev,
         [randomBot.id]: nextActivity,
       }));
-    }, 5500);
+    }, 6000);
 
     return () => clearInterval(interval);
-  }, [bots, builtCabins, isProjectStopped]);
+  }, [bots, builtCabins, isProjectStopped, activeConstruction, activeDemolition, botTransitPaths]);
 
-  // Trigger Bob the Builder
-  const triggerCreatorBot = (targetBot: Bot, slotIndex: number) => {
-    setCreatorBotState({ active: true, targetBotName: targetBot.name, targetSlot: slotIndex });
-    setTimeout(() => {
-      setCreatorBotState(null);
-    }, 2200);
-  };
-
-  // Trigger Rex the Destroyer
-  const triggerDestroyerBot = (targetBotName: string, slotIndex: number) => {
-    setDestroyerBotState({ active: true, targetBotName, targetSlot: slotIndex });
-    setTimeout(() => {
-      setDestroyerBotState(null);
-    }, 2200);
-  };
-
-  // User assigns file to bot
+  // =========================================================================
+  // TASK ASSIGNMENT SEQUENTIAL FLOW (Bob builds FIRST -> then Bot travels)
+  // =========================================================================
   const handleAssignTask = async (fileId: string, botId: string) => {
+    if (!activeProject) {
+      setBobSpeech("Vault not open to build office! Create or select a project first.");
+      showToast("Vault not open to build office! Create or select a project first.", "warn");
+      setTimeout(() => setBobSpeech(null), 3500);
+      return;
+    }
+
+    if (activeConstruction || activeDemolition) {
+      showToast("Crew is currently busy! Please wait a moment.", "info");
+      return;
+    }
+
     const targetBot = bots.find((b) => b.id === botId);
     if (!targetBot) return;
 
+    const targetFile = files.find((f) => f.id === fileId);
+    if (!targetFile) return;
+
     // Pick first open slot
     const usedSlots = Object.values(builtCabins).map((c) => c.slot);
+    if (tentativeCabin) usedSlots.push(tentativeCabin.slotIndex);
     const openSlot = CABIN_SLOTS.find((s) => !usedSlots.includes(s.id)) || CABIN_SLOTS[0];
 
-    triggerCreatorBot(targetBot, openSlot.id);
+    // STEP 1: Bob dispatches from his workshop cell directly to the cabin slot
+    setActiveConstruction({
+      botId: targetBot.id,
+      botName: targetBot.name,
+      fileId,
+      slotIndex: openSlot.id,
+      stage: 'bob_traveling',
+    });
+    setBobStatus('traveling');
+    setBobPos({ x: openSlot.x, y: openSlot.y });
+    setBobSpeech(`On my way to construct studio for ${targetBot.name}!`);
 
-    const success = await assignFileToBot(fileId, targetBot.id, targetBot.name);
-    if (success) {
-      showToast(`👷 Bob built a custom studio for ${targetBot.name}!`, 'success');
+    // STEP 2: Bob arrives and builds office
+    setTimeout(() => {
+      setBobStatus('building');
+      setBobSpeech(`🔨 Bob: Constructing ${openSlot.name}...`);
+    }, 800);
+
+    // STEP 3: Bob completes construction and flies back to his workshop cell
+    setTimeout(() => {
+      setBobStatus('returning');
+      setBobPos({ x: 12, y: 9 });
+      setBobSpeech(`Studio built! ${targetBot.name}, reporting for duty!`);
+      // Studio is now built and standing on the floor
+      setTentativeCabin({ slotIndex: openSlot.id, file: targetFile, botId: targetBot.id });
+    }, 2000);
+
+    // STEP 4: Bob arrives back in his cell; Bot leaves chill spot and travels along the green line
+    setTimeout(() => {
+      setBobStatus('idle');
+      setBobSpeech(null);
+
+      setActiveConstruction((prev) => (prev ? { ...prev, stage: 'bot_traveling' } : null));
+
+      const botIndex = bots.findIndex((b) => b.id === targetBot.id);
+      const currentSpot = prevSpotRef.current[targetBot.id] || botLeisureSpots[targetBot.id] || 'coffee';
+      const waypoints = computeWaypointsAlongLine(currentSpot, `cabin-${openSlot.id}`, botIndex);
+
+      setBotTransitPaths((prev) => ({
+        ...prev,
+        [targetBot.id]: waypoints,
+      }));
+    }, 2800);
+
+    // STEP 5: Bot arrives at desk, locks file, and gets seated
+    setTimeout(async () => {
+      await assignFileToBot(fileId, targetBot.id, targetBot.name);
+      prevSpotRef.current[targetBot.id] = `cabin-${openSlot.id}`;
+
+      setBotTransitPaths((prev) => {
+        const next = { ...prev };
+        delete next[targetBot.id];
+        return next;
+      });
+
+      setTentativeCabin(null);
+      setActiveConstruction(null);
+
+      showToast(`✨ ${targetBot.name} is seated in ${openSlot.name} working on ${targetFile.path}!`, 'success');
       if (selectedBotForBrief?.id === botId) {
         setSelectedBotForBrief(null);
       }
-    }
+    }, 5200);
   };
 
-  // User relieves bot / unassigns file
+  // =========================================================================
+  // TASK RELEASE SEQUENTIAL FLOW (Bot leaves FIRST -> then Rex demolishes)
+  // =========================================================================
   const handleUnassignTask = async (fileId: string) => {
+    if (activeConstruction || activeDemolition) {
+      showToast("Crew is currently busy! Please wait a moment.", "info");
+      return;
+    }
+
     const file = files.find((f) => f.id === fileId);
     if (!file || !file.lockedBy) return;
 
@@ -304,28 +432,88 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     const targetBot = bots.find((b) => b.id === botId);
     const botName = targetBot?.name || 'Bot';
     const slotIndex = builtCabins[botId]?.slot ?? 0;
+    const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
 
-    triggerDestroyerBot(botName, slotIndex);
-    await unassignFile(fileId);
-    showToast(`🚜 Rex demolished the studio! ${botName} is relieved to leisure campus.`, 'info');
-    if (selectedBotForBrief?.id === botId) {
-      setSelectedBotForBrief(null);
-    }
+    const destChill: LeisureActivity = 'coffee';
+    const botIndex = bots.findIndex((b) => b.id === botId);
+
+    // STEP 1: Bot leaves office FIRST and travels along transit line to chill area
+    setActiveDemolition({
+      botId,
+      botName,
+      fileId,
+      slotIndex,
+      stage: 'bot_leaving',
+    });
+    setVacatingCabinSlot(slotIndex);
+
+    const waypoints = computeWaypointsAlongLine(`cabin-${slotIndex}`, destChill, botIndex);
+    setBotTransitPaths((prev) => ({
+      ...prev,
+      [botId]: waypoints,
+    }));
+
+    // STEP 2: Bot safely arrives at chill spot (after 2400ms); Rex leaves depot directly to cabin
+    setTimeout(() => {
+      setBotLeisureSpots((prev) => ({
+        ...prev,
+        [botId]: destChill,
+      }));
+      prevSpotRef.current[botId] = destChill;
+      setBotTransitPaths((prev) => {
+        const next = { ...prev };
+        delete next[botId];
+        return next;
+      });
+
+      // Now Rex dispatches directly from depot to cabin
+      setActiveDemolition((prev) => (prev ? { ...prev, stage: 'rex_traveling' } : null));
+      setRexStatus('traveling');
+      setRexPos({ x: slot.x, y: slot.y });
+      setRexSpeech(`🚜 Rex: En route to demolish ${slot.name}!`);
+    }, 2400);
+
+    // STEP 3: Rex arrives and demolishes the office
+    setTimeout(() => {
+      setRexStatus('demolishing');
+      setRexSpeech(`💥 Demolishing studio! ${botName} safely chilled.`);
+    }, 3200);
+
+    // STEP 4: Rex finishes demolition and returns to depot
+    setTimeout(async () => {
+      setRexStatus('returning');
+      setRexPos({ x: 28, y: 9 });
+      setRexSpeech(`Demolition complete! Lot is cleared.`);
+
+      setVacatingCabinSlot(null);
+      await unassignFile(fileId);
+    }, 4400);
+
+    // STEP 5: Rex arrives back at depot
+    setTimeout(() => {
+      setRexStatus('idle');
+      setRexSpeech(null);
+      setActiveDemolition(null);
+
+      showToast(`🚜 Rex demolished the studio! ${botName} is relaxing in leisure campus.`, 'info');
+      if (selectedBotForBrief?.id === botId) {
+        setSelectedBotForBrief(null);
+      }
+    }, 5200);
   };
 
   // Get current waypoint array for rendering bot position / animation
   const getBotWaypoints = (bot: Bot, index: number): Array<{ x: number; y: number }> => {
-    const cabin = builtCabins[bot.id];
-
-    // If bot has a cabin on the left, stay at cabin desk
-    if (cabin) {
-      const slot = CABIN_SLOTS[cabin.slot] || CABIN_SLOTS[0];
-      return [{ x: slot.x + 2.5, y: slot.y + 1.5 }];
-    }
-
-    // If we have an active transit route computed along the green line
+    // If bot has active transit route along the green line, follow it!
     if (botTransitPaths[bot.id] && botTransitPaths[bot.id].length > 0) {
       return botTransitPaths[bot.id];
+    }
+
+    // If bot has an established cabin desk and isn't vacating:
+    const cabin = builtCabins[bot.id];
+    if (cabin && vacatingCabinSlot !== cabin.slot) {
+      const slot = CABIN_SLOTS[cabin.slot] || CABIN_SLOTS[0];
+      return [{ x: slot.x + 2.5, y: slot.y + 1.5 }];
     }
 
     // Default resting spot in leisure campus
@@ -389,6 +577,12 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
           <button
             onClick={() => {
+              if (!activeProject) {
+                setBobSpeech("Vault not open to build office! Create or select a project first.");
+                showToast("Vault not open to build office! Create or select a project first.", "warn");
+                setTimeout(() => setBobSpeech(null), 3500);
+                return;
+              }
               const freeBot = bots.find((b) => !builtCabins[b.id]);
               const unassignedFile = files.find((f) => !f.lockedBy) || files[0];
               if (freeBot && unassignedFile) {
@@ -435,13 +629,13 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       </div>
 
       {/* Draggable & Pannable Interactive Free-Look Canvas Viewport */}
-      <div className="relative w-full h-[660px] overflow-hidden cursor-grab active:cursor-grabbing bg-[var(--bg-app)]">
+      <div className="relative w-full h-[680px] overflow-hidden cursor-grab active:cursor-grabbing bg-[var(--bg-app)]">
         <motion.div
           drag
           dragElastic={0.08}
           dragConstraints={{ left: -400, right: 400, top: -240, bottom: 240 }}
           style={{ scale: canvasScale, x: canvasPan.x, y: canvasPan.y }}
-          className="relative w-[1440px] h-[740px] mx-auto origin-center transition-transform"
+          className="relative w-[1440px] h-[800px] mx-auto origin-center transition-transform"
         >
           {/* Blueprint Grid Background */}
           <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.07] bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
@@ -459,7 +653,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
             {/* Soft Ambient Underglow */}
             <path
-              d="M 172 162 L 403 162 M 172 384 L 403 384 M 172 606 L 403 606 M 288 162 L 288 606 M 288 414 L 920 414 M 920 162 L 920 606 M 920 162 L 1296 162 M 920 384 L 1166 384 M 920 606 L 1296 606"
+              d="M 172 200 L 403 200 M 172 432 L 403 432 M 172 656 L 403 656 M 288 200 L 288 656 M 288 432 L 920 432 M 920 200 L 920 656 M 920 200 L 1296 200 M 920 432 L 1166 432 M 920 656 L 1296 656"
               stroke="rgba(52, 211, 153, 0.2)"
               strokeWidth="6"
               strokeLinecap="round"
@@ -469,7 +663,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
             {/* Single Clean Light Green Line */}
             <path
-              d="M 172 162 L 403 162 M 172 384 L 403 384 M 172 606 L 403 606 M 288 162 L 288 606 M 288 414 L 920 414 M 920 162 L 920 606 M 920 162 L 1296 162 M 920 384 L 1166 384 M 920 606 L 1296 606"
+              d="M 172 200 L 403 200 M 172 432 L 403 432 M 172 656 L 403 656 M 288 200 L 288 656 M 288 432 L 920 432 M 920 200 L 920 656 M 920 200 L 1296 200 M 920 432 L 1166 432 M 920 656 L 1296 656"
               stroke="#34d399"
               strokeWidth="2.5"
               strokeLinecap="round"
@@ -479,14 +673,14 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             />
 
             {/* Sleek Junction Waypoint Dots */}
-            <circle cx="288" cy="414" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="720" cy="414" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="920" cy="414" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="1036" cy="162" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1296" cy="162" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1166" cy="384" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="1036" cy="606" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1296" cy="606" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="288" cy="432" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="720" cy="432" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="920" cy="432" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="1036" cy="200" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="200" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1166" cy="432" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="1036" cy="656" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="656" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
           </svg>
 
           {/* Central Colony Concourse Label */}
@@ -497,28 +691,229 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           </div>
 
           {/* ============================================================ */}
-          {/* LEFT SIDE: 6 WORK CABIN SLOTS (SPACIOUS & EXPANDED)          */}
+          {/* TOP LEFT: CREW WORKSHOPS (BOB & REX CELLS)                   */}
           {/* ============================================================ */}
-          <div className="absolute top-6 left-8 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-2 z-10">
-            <Laptop className="w-4 h-4 text-emerald-500" />
-            <span>WORK STUDIOS & CABINS DISTRICT</span>
+          <div className="absolute top-4 left-6 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-2 z-10">
+            <HardHat className="w-4 h-4 text-amber-500" />
+            <span>CREW WORKSHOPS & CABINS DISTRICT</span>
           </div>
 
+          {/* Bob's Workshop Cell (Resting Station for Bob) */}
+          <div
+            onClick={() => {
+              if (!activeProject) {
+                setBobSpeech("Vault not open to build office! Create or select a project first.");
+                showToast("Vault not open to build office! Create or select a project first.", "warn");
+                setTimeout(() => setBobSpeech(null), 3500);
+              } else {
+                setBobSpeech("Ready to construct! Assign a task to deploy me.");
+                setTimeout(() => setBobSpeech(null), 3000);
+              }
+            }}
+            style={{ left: '12%', top: '9%' }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 w-48 h-16 rounded-2xl bg-[var(--bg-card)] border border-amber-500/40 p-2.5 flex items-center gap-2.5 shadow-lg shadow-amber-500/5 hover:border-amber-400 cursor-pointer transition-all z-20 group"
+            title="Bob's Workshop - Click to talk with Bob"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform">
+              {bobStatus === 'idle' ? '👷' : '🏗️'}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold font-mono text-[var(--text-main)] truncate">Bob's Workshop</span>
+                <span className={`w-2 h-2 rounded-full ${bobStatus !== 'idle' ? 'bg-amber-400 animate-ping' : 'bg-emerald-500'}`} />
+              </div>
+              <div className="text-[9px] font-mono text-[var(--text-muted)] truncate mt-0.5">
+                {bobStatus === 'idle' ? 'Office Builder • Ready' : '🔨 Out on Site'}
+              </div>
+            </div>
+          </div>
+
+          {/* Rex's Demolition Depot Cell (Resting Station for Rex) */}
+          <div
+            onClick={() => {
+              setRexSpeech("Ready to clear! Relieve any working bot to demolish its studio.");
+              setTimeout(() => setRexSpeech(null), 3000);
+            }}
+            style={{ left: '28%', top: '9%' }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 w-48 h-16 rounded-2xl bg-[var(--bg-card)] border border-rose-500/40 p-2.5 flex items-center gap-2.5 shadow-lg shadow-rose-500/5 hover:border-rose-400 cursor-pointer transition-all z-20 group"
+            title="Rex's Demolition Depot - Click to talk with Rex"
+          >
+            <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition-transform">
+              {rexStatus === 'idle' ? '🚜' : '💥'}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold font-mono text-[var(--text-main)] truncate">Rex's Depot</span>
+                <span className={`w-2 h-2 rounded-full ${rexStatus !== 'idle' ? 'bg-rose-400 animate-ping' : 'bg-emerald-500'}`} />
+              </div>
+              <div className="text-[9px] font-mono text-[var(--text-muted)] truncate mt-0.5">
+                {rexStatus === 'idle' ? 'Demolition Yard • Ready' : '💥 Demolishing'}
+              </div>
+            </div>
+          </div>
+
+          {/* ============================================================ */}
+          {/* BOB THE BUILDER DYNAMIC FLIGHT / CONSTRUCTION DISPATCH       */}
+          {/* ============================================================ */}
+          <motion.div
+            animate={{
+              left: `${bobPos.x}%`,
+              top: `${bobPos.y}%`,
+              scale: bobStatus === 'building' ? [1, 1.2, 1] : bobStatus !== 'idle' ? 1.1 : 0,
+              opacity: bobStatus !== 'idle' ? 1 : 0,
+            }}
+            transition={{
+              duration: bobStatus === 'traveling' || bobStatus === 'returning' ? 0.8 : 0.3,
+              ease: 'easeInOut',
+              repeat: bobStatus === 'building' ? Infinity : 0,
+              repeatType: 'reverse',
+            }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none z-50"
+          >
+            {bobSpeech && (
+              <motion.div
+                initial={{ opacity: 0, y: 5, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="absolute -top-12 bg-amber-500 text-slate-950 font-bold font-mono text-[10px] px-3 py-1.5 rounded-xl shadow-2xl whitespace-nowrap z-50 animate-bounce"
+              >
+                {bobSpeech}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-amber-500" />
+              </motion.div>
+            )}
+            <div className="w-13 h-13 rounded-2xl bg-amber-500 border-2 border-white text-white flex items-center justify-center text-2xl shadow-2xl animate-pulse">
+              👷
+            </div>
+          </motion.div>
+
+          {/* Bob's speech bubble when idle in his cell */}
+          {bobStatus === 'idle' && bobSpeech && (
+            <motion.div
+              initial={{ opacity: 0, y: 5, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              style={{ left: '12%', top: '3.5%' }}
+              className="absolute -translate-x-1/2 bg-amber-500 text-slate-950 font-bold font-mono text-[10px] px-3 py-1.5 rounded-xl shadow-2xl whitespace-nowrap z-50 animate-bounce pointer-events-none"
+            >
+              {bobSpeech}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-amber-500" />
+            </motion.div>
+          )}
+
+          {/* ============================================================ */}
+          {/* REX THE DEMOLISHER DYNAMIC FLIGHT / DEMOLITION DISPATCH      */}
+          {/* ============================================================ */}
+          <motion.div
+            animate={{
+              left: `${rexPos.x}%`,
+              top: `${rexPos.y}%`,
+              scale: rexStatus === 'demolishing' ? [1, 1.25, 1] : rexStatus !== 'idle' ? 1.1 : 0,
+              opacity: rexStatus !== 'idle' ? 1 : 0,
+            }}
+            transition={{
+              duration: rexStatus === 'traveling' || rexStatus === 'returning' ? 0.8 : 0.3,
+              ease: 'easeInOut',
+              repeat: rexStatus === 'demolishing' ? Infinity : 0,
+              repeatType: 'reverse',
+            }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none z-50"
+          >
+            {rexSpeech && (
+              <motion.div
+                initial={{ opacity: 0, y: 5, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="absolute -top-12 bg-rose-500 text-white font-bold font-mono text-[10px] px-3 py-1.5 rounded-xl shadow-2xl whitespace-nowrap z-50 animate-bounce"
+              >
+                {rexSpeech}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-rose-500" />
+              </motion.div>
+            )}
+            <div className="w-13 h-13 rounded-2xl bg-rose-600 border-2 border-white text-white flex items-center justify-center text-2xl shadow-2xl animate-pulse">
+              🚜
+            </div>
+          </motion.div>
+
+          {/* Rex's speech bubble when idle in his cell */}
+          {rexStatus === 'idle' && rexSpeech && (
+            <motion.div
+              initial={{ opacity: 0, y: 5, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              style={{ left: '28%', top: '3.5%' }}
+              className="absolute -translate-x-1/2 bg-rose-500 text-white font-bold font-mono text-[10px] px-3 py-1.5 rounded-xl shadow-2xl whitespace-nowrap z-50 animate-bounce pointer-events-none"
+            >
+              {rexSpeech}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-rose-500" />
+            </motion.div>
+          )}
+
+          {/* ============================================================ */}
+          {/* LEFT SIDE: 6 WORK CABIN SLOTS (SPACIOUS & EXPANDED)          */}
+          {/* ============================================================ */}
           {CABIN_SLOTS.map((slot) => {
+            // When there is NO active project, all offices are closed
+            if (!activeProject) {
+              return (
+                <div
+                  key={slot.id}
+                  style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+                  className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/40 p-3.5 flex flex-col justify-between z-10 opacity-75"
+                >
+                  <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)]">
+                    <span className="text-[11px] font-mono font-bold text-[var(--text-main)] truncate">
+                      {slot.name}
+                    </span>
+                    <span className="flex items-center gap-1 text-[9px] font-mono text-amber-500 font-bold">
+                      <Lock className="w-2.5 h-2.5" />
+                      Closed
+                    </span>
+                  </div>
+
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-2">
+                    <span className="text-xl mb-1 opacity-70">🔒</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] font-mono">
+                      Office Closed
+                    </span>
+                    <span className="text-[9px] text-[var(--text-faint)] mt-0.5">
+                      Vault closed • Standby
+                    </span>
+                  </div>
+
+                  <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-faint)]">
+                    <span>Track Station #{slot.id + 1}</span>
+                    <span>Standby</span>
+                  </div>
+                </div>
+              );
+            }
+
+            // Active Project Mode: Check if assigned or tentatively built
+            const isTentative = tentativeCabin && tentativeCabin.slotIndex === slot.id;
+            const isVacating = vacatingCabinSlot === slot.id;
+
             const assignedBotEntry = Object.entries(builtCabins).find(
               ([_, val]) => val.slot === slot.id
             );
-            const assignedBotId = assignedBotEntry?.[0];
-            const assignedFile = assignedBotEntry?.[1]?.file;
+            const assignedBotId = isTentative ? tentativeCabin.botId : assignedBotEntry?.[0];
+            const assignedFile = isTentative ? tentativeCabin.file : assignedBotEntry?.[1]?.file;
             const assignedBot = bots.find((b) => b.id === assignedBotId);
+
+            // Construction & Demolition Indicators
+            const isBeingBuilt = activeConstruction?.slotIndex === slot.id && activeConstruction.stage === 'bob_building';
+            const isBeingDemolished = activeDemolition?.slotIndex === slot.id && activeDemolition.stage === 'rex_demolishing';
 
             return (
               <div
                 key={slot.id}
                 style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
-                className={`absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl border transition-all duration-300 flex flex-col justify-between p-3.5 z-10 ${
-                  assignedBot
+                className={`absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl border transition-all duration-300 flex flex-col justify-between p-3.5 z-10 ${
+                  assignedBot && !isVacating
                     ? 'bg-[var(--bg-card)] border-emerald-500/60 shadow-lg shadow-emerald-500/10'
+                    : isBeingBuilt
+                    ? 'bg-amber-500/10 border-amber-500/50 shadow-md animate-pulse'
+                    : isBeingDemolished
+                    ? 'bg-rose-500/10 border-rose-500/50 shadow-md animate-pulse'
                     : 'border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/30 hover:border-emerald-500/30'
                 }`}
               >
@@ -527,7 +922,19 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                   <span className="text-[11px] font-mono font-bold text-[var(--text-main)] truncate">
                     {slot.name}
                   </span>
-                  {assignedBot ? (
+                  {isBeingBuilt ? (
+                    <span className="text-[9px] font-mono text-amber-500 font-bold animate-pulse">
+                      🔨 Building...
+                    </span>
+                  ) : isBeingDemolished ? (
+                    <span className="text-[9px] font-mono text-rose-500 font-bold animate-pulse">
+                      💥 Demolishing...
+                    </span>
+                  ) : isVacating ? (
+                    <span className="text-[9px] font-mono text-amber-500 font-bold">
+                      Vacating...
+                    </span>
+                  ) : assignedBot ? (
                     <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-500 font-bold">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       Active
@@ -538,7 +945,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 </div>
 
                 {/* Desk Furniture or File Task */}
-                {assignedBot && assignedFile ? (
+                {assignedBot && assignedFile && !isVacating ? (
                   <div className="flex-1 flex flex-col items-center justify-center my-1 bg-[var(--bg-panel)] rounded-xl p-2 border border-[var(--border-subtle)] shadow-inner">
                     <div className="flex items-center gap-1.5 mb-1 max-w-full">
                       <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -573,16 +980,24 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                     <button
                       onClick={() => handleUnassignTask(assignedFile.id)}
                       className="mt-2 text-[10px] text-rose-500 hover:text-rose-400 font-bold underline font-mono transition-colors"
-                      title="Demolish cabin with Rex and relieve bot"
+                      title="Relieve bot to leisure campus & call Rex to demolish cabin"
                     >
                       (Relieve Bot / Demolish)
                     </button>
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-2">
-                    <span className="text-xl opacity-40 mb-1">🏗️</span>
+                    <span className="text-xl opacity-40 mb-1">
+                      {isBeingBuilt ? '🔨' : isBeingDemolished ? '💥' : '🏗️'}
+                    </span>
                     <span className="text-[10px] text-[var(--text-muted)] font-mono">
-                      Ready for Bob to build
+                      {isBeingBuilt
+                        ? 'Bob constructing...'
+                        : isBeingDemolished
+                        ? 'Rex demolishing...'
+                        : isVacating
+                        ? 'Bot leaving desk...'
+                        : 'Ready for Bob to build'}
                     </span>
                   </div>
                 )}
@@ -590,7 +1005,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 {/* Cabin Footer Waypoint */}
                 <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
                   <span>Track Station #{slot.id + 1}</span>
-                  {assignedBot && <span className="text-emerald-500 font-semibold">Locked</span>}
+                  {assignedBot && !isVacating && <span className="text-emerald-500 font-semibold">Locked</span>}
                 </div>
               </div>
             );
@@ -602,7 +1017,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           {/* Live App Monitor Billboard (Top Center) */}
           <div
             onClick={() => setShowWallMonitorModal(true)}
-            style={{ left: '50%', top: '16%' }}
+            style={{ left: '50%', top: '18%' }}
             className="absolute -translate-x-1/2 -translate-y-1/2 w-80 h-28 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 shadow-xl hover:border-emerald-500 cursor-pointer transition-all group z-20"
           >
             <div className="flex items-center justify-between text-[11px] font-mono mb-1 text-[var(--text-muted)]">
@@ -623,69 +1038,105 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
           {/* Central Memory Box Code Vault (Center Spine) */}
           <div
-            style={{ left: '50%', top: '56%' }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 w-76 p-4 rounded-3xl bg-[var(--bg-card)] border-2 border-emerald-500/60 shadow-2xl shadow-emerald-500/15 flex flex-col gap-2.5 z-20"
+            style={{ left: '50%', top: '54%' }}
+            className={`absolute -translate-x-1/2 -translate-y-1/2 w-80 p-4 rounded-3xl border-2 shadow-2xl transition-all z-20 flex flex-col gap-2.5 ${
+              !activeProject
+                ? 'bg-[var(--bg-card)]/95 border-amber-500/60 shadow-amber-500/10'
+                : 'bg-[var(--bg-card)] border-emerald-500/60 shadow-emerald-500/15'
+            }`}
           >
             <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
               <span className="text-xs font-bold font-mono text-[var(--text-main)] flex items-center gap-2">
-                <Folder className="w-4 h-4 text-emerald-500" />
-                <span>Central Memory Vault</span>
+                {!activeProject ? (
+                  <Lock className="w-4 h-4 text-amber-500" />
+                ) : (
+                  <Folder className="w-4 h-4 text-emerald-500" />
+                )}
+                <span>{!activeProject ? 'Vault Sealed (Standby)' : 'Central Memory Vault'}</span>
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                {files.length} Files
+              <span
+                className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border ${
+                  !activeProject
+                    ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                }`}
+              >
+                {!activeProject ? '🔒 Closed' : `${files.length} Files`}
               </span>
             </div>
 
-            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-              {files.map((f) => {
-                const isLocked = Boolean(f.lockedBy);
-                const lockerBot = bots.find((b) => b.id === f.lockedBy);
+            {!activeProject ? (
+              <div className="py-5 px-3 flex flex-col items-center justify-center text-center bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)]">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-500 flex items-center justify-center text-2xl mb-2 animate-pulse">
+                  🔒
+                </div>
+                <div className="text-xs font-bold text-[var(--text-main)] font-mono">
+                  Vault Closed - No Active Project
+                </div>
+                <p className="text-[10px] text-[var(--text-muted)] mt-1 max-w-[200px] leading-relaxed">
+                  Vault doors are locked. Bob cannot build offices without an active project.
+                </p>
+                <button
+                  onClick={() => setActiveView('projects')}
+                  className="mt-3 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-semibold font-mono shadow-md transition-all hover:scale-105"
+                >
+                  + Create / Select Project
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                {files.map((f) => {
+                  const isLocked = Boolean(f.lockedBy);
+                  const lockerBot = bots.find((b) => b.id === f.lockedBy);
 
-                return (
-                  <div
-                    key={f.id}
-                    className="flex items-center justify-between p-2 rounded-xl bg-[var(--bg-panel)] text-[10px] font-mono border border-[var(--border-subtle)]"
-                  >
-                    <span className={`truncate max-w-[120px] font-semibold ${isLocked ? 'text-amber-500' : 'text-[var(--text-main)]'}`}>
-                      {f.path}
-                    </span>
-
-                    {isLocked ? (
-                      <span className="text-amber-500 flex items-center gap-1 font-bold text-[9px]">
-                        <Lock className="w-3 h-3" />
-                        {lockerBot?.name || 'Locked'}
+                  return (
+                    <div
+                      key={f.id}
+                      className="flex items-center justify-between p-2 rounded-xl bg-[var(--bg-panel)] text-[10px] font-mono border border-[var(--border-subtle)]"
+                    >
+                      <span className={`truncate max-w-[120px] font-semibold ${isLocked ? 'text-amber-500' : 'text-[var(--text-main)]'}`}>
+                        {f.path}
                       </span>
-                    ) : (
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) handleAssignTask(f.id, e.target.value);
-                        }}
-                        className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
-                      >
-                        <option value="">Assign...</option>
-                        {bots.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+
+                      {isLocked ? (
+                        <span className="text-amber-500 flex items-center gap-1 font-bold text-[9px]">
+                          <Lock className="w-3 h-3" />
+                          {lockerBot?.name || 'Locked'}
+                        </span>
+                      ) : (
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) handleAssignTask(f.id, e.target.value);
+                          }}
+                          className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                        >
+                          <option value="">Assign...</option>
+                          {bots.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
               <span>Station: 🏛️ Central Vault Depot</span>
-              <span className="text-emerald-500 font-bold">AES-256</span>
+              <span className={!activeProject ? 'text-amber-500 font-bold' : 'text-emerald-500 font-bold'}>
+                {!activeProject ? 'AES-256 Locked' : 'AES-256 Active'}
+              </span>
             </div>
           </div>
 
           {/* ============================================================ */}
           {/* RIGHT SIDE: 5 RECREATION & LEISURE ACTIVITY ZONES            */}
           {/* ============================================================ */}
-          <div className="absolute top-6 right-8 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-2 z-10">
+          <div className="absolute top-4 right-8 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-2 z-10">
             <Coffee className="w-4 h-4 text-amber-500" />
             <span>RECREATION & LEISURE CAMPUS (5 SPOTS)</span>
           </div>
@@ -693,7 +1144,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           {/* Zone 1: Coffee Barista Lounge */}
           <div
             style={{ left: `${LEISURE_ZONES.coffee.x}%`, top: `${LEISURE_ZONES.coffee.y}%` }}
-            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -714,7 +1165,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           {/* Zone 2: 8-Bit Arcade Playground */}
           <div
             style={{ left: `${LEISURE_ZONES.arcade.x}%`, top: `${LEISURE_ZONES.arcade.y}%` }}
-            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -736,7 +1187,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           <div
             onClick={() => setShowKnowledgeModal(true)}
             style={{ left: `${LEISURE_ZONES.library.x}%`, top: `${LEISURE_ZONES.library.y}%` }}
-            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border-2 border-emerald-500/40 p-3.5 flex flex-col justify-between shadow-xl cursor-pointer hover:border-emerald-500 transition-colors group z-10"
+            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border-2 border-emerald-500/40 p-3.5 flex flex-col justify-between shadow-xl cursor-pointer hover:border-emerald-500 transition-colors group z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -759,7 +1210,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           {/* Zone 4: Chill TV Lounge */}
           <div
             style={{ left: `${LEISURE_ZONES.tv.x}%`, top: `${LEISURE_ZONES.tv.y}%` }}
-            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -780,7 +1231,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           {/* Zone 5: Water Cooler Chat Hub */}
           <div
             style={{ left: `${LEISURE_ZONES.water_cooler.x}%`, top: `${LEISURE_ZONES.water_cooler.y}%` }}
-            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+            className="absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
@@ -799,74 +1250,18 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           </div>
 
           {/* ============================================================ */}
-          {/* BOB THE BUILDER (CREATOR BOT) FLYING ANIMATION               */}
-          {/* ============================================================ */}
-          <AnimatePresence>
-            {creatorBotState && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5, x: 200, y: 300 }}
-                animate={{
-                  opacity: 1,
-                  scale: 1,
-                  x: (CABIN_SLOTS[creatorBotState.targetSlot]?.x || 20) * 14.4,
-                  y: (CABIN_SLOTS[creatorBotState.targetSlot]?.y || 30) * 7.4,
-                }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                transition={{ duration: 0.7 }}
-                className="absolute z-50 flex flex-col items-center pointer-events-none"
-              >
-                <div className="px-3 py-1 bg-amber-500 text-slate-950 font-bold font-mono text-[11px] rounded-full shadow-xl flex items-center gap-1.5 mb-1.5 animate-bounce">
-                  <HardHat className="w-4 h-4" />
-                  <span>🔨 Bob: Constructing Studio for {creatorBotState.targetBotName}!</span>
-                </div>
-                <div className="w-14 h-14 rounded-2xl bg-amber-500 border-2 border-white text-white flex items-center justify-center text-2xl shadow-2xl animate-pulse">
-                  👷
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ============================================================ */}
-          {/* REX THE WRECK-IT (DESTROYER BOT) FLYING ANIMATION            */}
-          {/* ============================================================ */}
-          <AnimatePresence>
-            {destroyerBotState && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5, x: 100, y: 150 }}
-                animate={{
-                  opacity: 1,
-                  scale: 1,
-                  x: (CABIN_SLOTS[destroyerBotState.targetSlot]?.x || 20) * 14.4,
-                  y: (CABIN_SLOTS[destroyerBotState.targetSlot]?.y || 30) * 7.4,
-                }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                transition={{ duration: 0.7 }}
-                className="absolute z-50 flex flex-col items-center pointer-events-none"
-              >
-                <div className="px-3 py-1 bg-rose-500 text-white font-bold font-mono text-[11px] rounded-full shadow-xl flex items-center gap-1.5 mb-1.5 animate-bounce">
-                  <Bomb className="w-4 h-4" />
-                  <span>💥 Rex: Demolished Studio! Bot is free!</span>
-                </div>
-                <div className="w-14 h-14 rounded-2xl bg-rose-600 border-2 border-white text-white flex items-center justify-center text-2xl shadow-2xl animate-pulse">
-                  🚜
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* ============================================================ */}
           {/* ALL BOTS MOVING ALONG THE GREEN TRANSIT LINE                 */}
           {/* ============================================================ */}
           {bots.map((bot, index) => {
             const waypoints = getBotWaypoints(bot, index);
-            const isAssigned = Boolean(builtCabins[bot.id]);
+            const isAssigned = Boolean(builtCabins[bot.id]) && vacatingCabinSlot !== builtCabins[bot.id]?.slot;
             const isWorking = bot.status === 'working';
             const isTroubled = bot.status === 'blocked';
             const isPaused = pausedBotIds.has(bot.id);
 
             // Determine appropriate facial emote
             let emote: BotEmoteType = 'normal';
-            if (isProjectStopped || isPaused) {
+            if (isProjectStopped || isPaused || !activeProject) {
               emote = 'coffee'; // Relaxed / sleeping
             } else if (isTroubled) {
               emote = 'frustrated';
@@ -885,7 +1280,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                   top: waypoints.map((p) => `${p.y}%`),
                 }}
                 transition={{
-                  duration: Math.max(2.4, waypoints.length * 0.8),
+                  duration: Math.max(2.4, waypoints.length * 0.7),
                   ease: 'easeInOut',
                 }}
                 onClick={() => setSelectedBotForBrief(bot)}
@@ -1008,23 +1403,25 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                     </p>
 
                     {/* Quick Assign Dropdown */}
-                    <div className="mt-2.5 flex items-center gap-2">
-                      <span className="text-[11px] font-mono text-[var(--text-muted)]">Assign File:</span>
-                      <select
-                        onChange={(e) => {
-                          if (e.target.value) handleAssignTask(e.target.value, selectedBotForBrief.id);
-                        }}
-                        defaultValue=""
-                        className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-xs rounded-xl px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
-                      >
-                        <option value="">Choose file for bot...</option>
-                        {files.filter((f) => !f.lockedBy).map((f) => (
-                          <option key={f.id} value={f.id}>
-                            {f.path}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {activeProject && (
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-[var(--text-muted)]">Assign File:</span>
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) handleAssignTask(e.target.value, selectedBotForBrief.id);
+                          }}
+                          defaultValue=""
+                          className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-xs rounded-xl px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                        >
+                          <option value="">Choose file for bot...</option>
+                          {files.filter((f) => !f.lockedBy).map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.path}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

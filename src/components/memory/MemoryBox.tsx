@@ -103,6 +103,26 @@ export const MemoryBox: React.FC = () => {
     return { __html: cleanHtml };
   };
 
+  if (!activeProject) {
+    return (
+      <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl flex flex-col h-full overflow-hidden shadow-sm p-6 items-center justify-center text-center">
+        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mb-3 text-2xl">
+          🔒
+        </div>
+        <h3 className="text-sm font-semibold text-[var(--text-main)] mb-1">Shared Memory Vault Locked</h3>
+        <p className="text-xs text-[var(--text-muted)] max-w-xs mb-4">
+          No project is currently active. Create or select a project to load virtual files and shared memory.
+        </p>
+        <button
+          onClick={() => setActiveView('projects')}
+          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-600/20"
+        >
+          Open Projects
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl flex flex-col h-full overflow-hidden shadow-sm transition-colors duration-200">
       {/* Memory Box Header */}
