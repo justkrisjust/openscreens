@@ -12,10 +12,12 @@ import { useProjectStore } from '../../stores/useProjectStore';
 
 export const EventFeed: React.FC = () => {
   const { events } = useProjectStore();
-  const feedEndRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    }
   }, [events]);
 
   const getEventIcon = (type: string) => {
@@ -47,7 +49,7 @@ export const EventFeed: React.FC = () => {
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto space-y-1.5 pr-1">
         {events.length === 0 ? (
           <div className="text-center py-6 text-xs text-[var(--text-muted)]">
             No events logged yet. Press Start to initiate bot coordination.
@@ -80,7 +82,6 @@ export const EventFeed: React.FC = () => {
             </div>
           ))
         )}
-        <div ref={feedEndRef} />
       </div>
     </div>
   );

@@ -1,18 +1,38 @@
-import React, { useState } from 'react';
-import { Send, Users, User, MessageSquare, ThumbsUp, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Users, MessageSquare, ThumbsUp, Sparkles, Bot } from 'lucide-react';
 import { useBotStore } from '../../stores/useBotStore';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useUIStore } from '../../stores/useUIStore';
 
 export const DirectorChat: React.FC = () => {
   const { bots } = useBotStore();
-  const { activeProject, logEvent, startProjectExecution } = useProjectStore();
+  const { activeProject, events, logEvent, startProjectExecution } = useProjectStore();
   const { showToast } = useUIStore();
 
   const [message, setMessage] = useState('');
   const [targetId, setTargetId] = useState<'all' | string>('all');
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   const projectBots = bots.filter((b) => activeProject?.botIds.includes(b.id));
+
+  // Extract all chat events
+  const chatEvents = events.filter((e) => e.type === 'chat_message');
+
+  // Filter messages by selected target if desired, or show all
+  const filteredMessages = chatEvents.filter((ev) => {
+    if (targetId === 'all') return true;
+    const targetBot = projectBots.find((b) => b.id === targetId);
+    if (!targetBot) return true;
+    // Show if message is from the bot OR if user feedback was directed to this bot
+    return ev.botId === targetId || ev.summary.includes(`[${targetBot.name}]`) || ev.summary.includes('[All Bots]');
+  });
+
+  // Auto-scroll inside chat box only (never scroll the window)
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [filteredMessages.length]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,12 +63,16 @@ export const DirectorChat: React.FC = () => {
   };
 
   return (
-    <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-3 shadow-sm transition-colors duration-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+    <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-col h-full shadow-sm transition-colors duration-200">
+      {/* Header & Target selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[var(--border-subtle)] mb-2">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-emerald-500" />
-          <span className="text-xs font-semibold text-[var(--text-main)]">
+          <span className="text-xs font-semibold text-[var(--text-main)] font-heading">
             Director Chat (You are Final Approver)
+          </span>
+          <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.2 rounded-full font-mono">
+            {filteredMessages.length} msgs
           </span>
         </div>
 
@@ -58,7 +82,7 @@ export const DirectorChat: React.FC = () => {
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[11px] rounded-lg px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 font-medium"
+            className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[11px] rounded-lg px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
           >
             <option value="all">Broadcast to All Bots</option>
             {projectBots.map((b) => (
@@ -68,6 +92,73 @@ export const DirectorChat: React.FC = () => {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Message History Thread */}
+      <div
+        ref={chatScrollRef}
+        className="flex-1 min-h-[160px] max-h-[260px] overflow-y-auto space-y-2 pr-1 mb-2 scroll-smooth"
+      >
+        {filteredMessages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center py-6 text-center text-xs text-[var(--text-muted)]">
+            <MessageSquare className="w-8 h-8 text-[var(--text-faint)] mb-2 opacity-50" />
+            <p className="font-medium text-[var(--text-main)]">No directives sent yet</p>
+            <p className="text-[11px] text-[var(--text-faint)] mt-0.5 max-w-xs">
+              Chat with your bots to guide their code, review designs, or give real-time feedback.
+            </p>
+          </div>
+        ) : (
+          filteredMessages.map((ev) => {
+            const isUser = ev.botId === 'user-director';
+            const botData = !isUser ? projectBots.find((b) => b.id === ev.botId) : null;
+
+            return (
+              <div
+                key={ev.id}
+                className={`flex gap-2 text-xs ${isUser ? 'justify-end' : 'justify-start'}`}
+              >
+                {!isUser && (
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-500 text-[10px] font-bold">
+                    {botData?.name?.slice(0, 1) || 'B'}
+                  </div>
+                )}
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs shadow-sm ${
+                    isUser
+                      ? 'bg-emerald-600 text-white rounded-tr-none'
+                      : 'bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-subtle)] rounded-tl-none'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <span
+                      className={`text-[10px] font-bold ${
+                        isUser ? 'text-emerald-100' : 'text-emerald-500 dark:text-emerald-400'
+                      }`}
+                    >
+                      {ev.botName}
+                    </span>
+                    <span
+                      className={`text-[9px] font-mono ${
+                        isUser ? 'text-emerald-200' : 'text-[var(--text-faint)]'
+                      }`}
+                    >
+                      {new Date(ev.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                  <p className="leading-relaxed whitespace-pre-wrap break-words">{ev.summary}</p>
+                </div>
+                {isUser && (
+                  <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                    You
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Quick Approval Pills */}
@@ -95,6 +186,7 @@ export const DirectorChat: React.FC = () => {
         </button>
       </div>
 
+      {/* Input Box */}
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
         <input
           type="text"
@@ -109,7 +201,7 @@ export const DirectorChat: React.FC = () => {
         />
         <button
           type="submit"
-          className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors shadow-md shadow-emerald-600/20"
+          className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors shadow-md shadow-emerald-600/20 flex items-center justify-center"
           title="Send message"
         >
           <Send className="w-4 h-4" />

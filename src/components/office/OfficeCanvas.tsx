@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Play,
   Pause,
   Square,
   Users,
+  MessageSquare,
+  Layers,
+  Box,
+  Activity,
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useBotStore } from '../../stores/useBotStore';
@@ -15,6 +19,8 @@ import { DirectorChat } from '../chat/DirectorChat';
 import { VirtualOfficeFloor } from './VirtualOfficeFloor';
 
 export const OfficeCanvas: React.FC = () => {
+  const [mobileSection, setMobileSection] = useState<'floor' | 'chat' | 'memory' | 'feed'>('floor');
+
   const {
     activeProject,
     startProjectExecution,
@@ -153,78 +159,179 @@ export const OfficeCanvas: React.FC = () => {
             >
               <Square className="w-3.5 h-3.5 fill-current" />
             </button>
+
+            {/* Quick Chat Shortcut Button */}
+            <button
+              onClick={() => setMobileSection('chat')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                mobileSection === 'chat'
+                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 shadow-sm'
+                  : 'bg-[var(--bg-panel)] text-[var(--text-main)] border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]'
+              }`}
+              title="Open Director Chat with bots"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Chat</span>
+              <span className="text-[10px] font-mono px-1 py-0.2 bg-emerald-500/10 text-emerald-500 rounded-full">
+                {events.filter((e) => e.type === 'chat_message').length}
+              </span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Visual Representation: Animated Virtual Office Floor with ALL bots visible */}
-      <VirtualOfficeFloor
-        bots={bots}
-        activeLocks={activeLocks}
-        isExecutingTurn={isExecutingTurn}
-      />
-
-      {/* Detailed Stations & Memory Box Area: Bot A (Left) - Memory Box (Center) - Bot B (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left Area: Bot A */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
-          {botA ? (
-            <BotWorkArea
-              bot={botA}
-              side="left"
-              lastMessage={getLastMessageForBot(botA.id)}
-            />
-          ) : (
-            <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-[#23252b] rounded-2xl">
-              No Lead Bot Assigned
-            </div>
-          )}
-
-          {additionalBots[0] && (
-            <BotWorkArea
-              bot={additionalBots[0]}
-              side="grid"
-              lastMessage={getLastMessageForBot(additionalBots[0].id)}
-            />
-          )}
-        </div>
-
-        {/* Center: Shared Memory Box (Virtual File Tree + Editor) */}
-        <div className="lg:col-span-6 min-h-[440px] flex flex-col">
-          <MemoryBox />
-        </div>
-
-        {/* Right Area: Bot B */}
-        <div className="lg:col-span-3 flex flex-col gap-4">
-          {botB ? (
-            <BotWorkArea
-              bot={botB}
-              side="right"
-              lastMessage={getLastMessageForBot(botB.id)}
-            />
-          ) : (
-            <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-[#23252b] rounded-2xl">
-              No Teammate Bot Assigned
-            </div>
-          )}
-
-          {additionalBots[1] && (
-            <BotWorkArea
-              bot={additionalBots[1]}
-              side="grid"
-              lastMessage={getLastMessageForBot(additionalBots[1].id)}
-            />
-          )}
-        </div>
+      {/* Mobile View Switcher Tabs (Phones & Small Tablets) */}
+      <div className="flex lg:hidden items-center justify-between bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-1 gap-1 shadow-sm">
+        <button
+          onClick={() => setMobileSection('floor')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
+            mobileSection === 'floor'
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border border-emerald-500/20'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Office</span>
+        </button>
+        <button
+          onClick={() => setMobileSection('chat')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
+            mobileSection === 'chat'
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border border-emerald-500/20'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Chat</span>
+          <span className="text-[9px] font-mono px-1 rounded-full bg-emerald-500/10 text-emerald-500">
+            {events.filter((e) => e.type === 'chat_message').length}
+          </span>
+        </button>
+        <button
+          onClick={() => setMobileSection('memory')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
+            mobileSection === 'memory'
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border border-emerald-500/20'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+          }`}
+        >
+          <Box className="w-3.5 h-3.5" />
+          <span>Files</span>
+        </button>
+        <button
+          onClick={() => setMobileSection('feed')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
+            mobileSection === 'feed'
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border border-emerald-500/20'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+          }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>Feed</span>
+        </button>
       </div>
 
-      {/* Bottom Area: Compact Event Feed (Left) & User Director Chat (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-1">
-        <div className="lg:col-span-7">
-          <EventFeed />
+      {/* Mobile Content Display based on selected tab */}
+      <div className="block lg:hidden flex-1">
+        {mobileSection === 'floor' && (
+          <div className="flex flex-col gap-4">
+            <VirtualOfficeFloor
+              bots={bots}
+              activeLocks={activeLocks}
+              isExecutingTurn={isExecutingTurn}
+            />
+            {botA && (
+              <BotWorkArea
+                bot={botA}
+                side="left"
+                lastMessage={getLastMessageForBot(botA.id)}
+              />
+            )}
+            {botB && (
+              <BotWorkArea
+                bot={botB}
+                side="right"
+                lastMessage={getLastMessageForBot(botB.id)}
+              />
+            )}
+          </div>
+        )}
+        {mobileSection === 'chat' && <DirectorChat />}
+        {mobileSection === 'memory' && <MemoryBox />}
+        {mobileSection === 'feed' && <EventFeed />}
+      </div>
+
+      {/* Desktop Panoramic Full View (Large Screens) */}
+      <div className="hidden lg:flex flex-col gap-4">
+        {/* Visual Representation: Animated Virtual Office Floor with ALL bots visible */}
+        <VirtualOfficeFloor
+          bots={bots}
+          activeLocks={activeLocks}
+          isExecutingTurn={isExecutingTurn}
+        />
+
+        {/* Detailed Stations & Memory Box Area: Bot A (Left) - Memory Box (Center) - Bot B (Right) */}
+        <div className="grid grid-cols-12 gap-4">
+          {/* Left Area: Bot A */}
+          <div className="col-span-3 flex flex-col gap-4">
+            {botA ? (
+              <BotWorkArea
+                bot={botA}
+                side="left"
+                lastMessage={getLastMessageForBot(botA.id)}
+              />
+            ) : (
+              <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-[#23252b] rounded-2xl">
+                No Lead Bot Assigned
+              </div>
+            )}
+
+            {additionalBots[0] && (
+              <BotWorkArea
+                bot={additionalBots[0]}
+                side="grid"
+                lastMessage={getLastMessageForBot(additionalBots[0].id)}
+              />
+            )}
+          </div>
+
+          {/* Center: Shared Memory Box (Virtual File Tree + Editor) */}
+          <div className="col-span-6 min-h-[440px] flex flex-col">
+            <MemoryBox />
+          </div>
+
+          {/* Right Area: Bot B */}
+          <div className="col-span-3 flex flex-col gap-4">
+            {botB ? (
+              <BotWorkArea
+                bot={botB}
+                side="right"
+                lastMessage={getLastMessageForBot(botB.id)}
+              />
+            ) : (
+              <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-[#23252b] rounded-2xl">
+                No Teammate Bot Assigned
+              </div>
+            )}
+
+            {additionalBots[1] && (
+              <BotWorkArea
+                bot={additionalBots[1]}
+                side="grid"
+                lastMessage={getLastMessageForBot(additionalBots[1].id)}
+              />
+            )}
+          </div>
         </div>
-        <div className="lg:col-span-5">
-          <DirectorChat />
+
+        {/* Bottom Area: Compact Event Feed (Left) & User Director Chat (Right) */}
+        <div className="grid grid-cols-12 gap-4 mt-1">
+          <div className="col-span-7">
+            <EventFeed />
+          </div>
+          <div className="col-span-5">
+            <DirectorChat />
+          </div>
         </div>
       </div>
     </div>
