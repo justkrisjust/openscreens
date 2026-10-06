@@ -14,7 +14,6 @@ import {
 import { useProjectStore } from '../../stores/useProjectStore';
 import { useBotStore } from '../../stores/useBotStore';
 import { useUIStore } from '../../stores/useUIStore';
-import { BotWorkArea } from './BotWorkArea';
 import { MemoryBox } from '../memory/MemoryBox';
 import { EventFeed } from './EventFeed';
 import { DirectorChat } from '../chat/DirectorChat';
@@ -61,19 +60,9 @@ export const OfficeCanvas: React.FC = () => {
   // Find bots belonging to this project
   const projectBots = bots.filter((b) => activeProject.botIds.includes(b.id));
 
-  // Determine last message per bot from recent events
-  const getLastMessageForBot = (botId: string) => {
-    const botEvents = events.filter((e) => e.botId === botId);
-    return botEvents[botEvents.length - 1]?.summary;
-  };
-
   const isRunning = activeProject.status === 'running';
   const isCompleted = activeProject.status === 'completed';
   const isPaused = activeProject.status === 'paused';
-
-  const botA = projectBots[0];
-  const botB = projectBots[1];
-  const additionalBots = projectBots.slice(2);
 
   return (
     <div className="max-w-[1600px] mx-auto p-4 flex flex-col gap-4 min-h-[calc(100vh-65px)]">
@@ -252,27 +241,11 @@ export const OfficeCanvas: React.FC = () => {
       {/* Mobile Content Display based on selected tab */}
       <div className="block lg:hidden flex-1">
         {mobileSection === 'floor' && (
-          <div className="flex flex-col gap-4">
-            <VirtualOfficeFloor
-              bots={bots}
-              activeLocks={activeLocks}
-              isExecutingTurn={isExecutingTurn}
-            />
-            {botA && (
-              <BotWorkArea
-                bot={botA}
-                side="left"
-                lastMessage={getLastMessageForBot(botA.id)}
-              />
-            )}
-            {botB && (
-              <BotWorkArea
-                bot={botB}
-                side="right"
-                lastMessage={getLastMessageForBot(botB.id)}
-              />
-            )}
-          </div>
+          <VirtualOfficeFloor
+            bots={bots}
+            activeLocks={activeLocks}
+            isExecutingTurn={isExecutingTurn}
+          />
         )}
         {mobileSection === 'chat' && <DirectorChat />}
         {mobileSection === 'memory' && <MemoryBox />}
@@ -288,66 +261,20 @@ export const OfficeCanvas: React.FC = () => {
           isExecutingTurn={isExecutingTurn}
         />
 
-        {/* Detailed Stations & Memory Box Area: Bot A (Left) - Memory Box (Center) - Bot B (Right) */}
-        <div className="grid grid-cols-12 gap-4">
-          {/* Left Area: Bot A */}
-          <div className="col-span-3 flex flex-col gap-4">
-            {botA ? (
-              <BotWorkArea
-                bot={botA}
-                side="left"
-                lastMessage={getLastMessageForBot(botA.id)}
-              />
-            ) : (
-              <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-[#23252b] rounded-2xl">
-                No Lead Bot Assigned
-              </div>
-            )}
-
-            {additionalBots[0] && (
-              <BotWorkArea
-                bot={additionalBots[0]}
-                side="grid"
-                lastMessage={getLastMessageForBot(additionalBots[0].id)}
-              />
-            )}
+        {/* Lower Workspace: Event Feed (Left) - Shared Memory Box (Center) - Director Chat (Right) */}
+        <div className="grid grid-cols-12 gap-4 items-stretch">
+          {/* Left Column: Compact Event Feed */}
+          <div className="col-span-12 xl:col-span-3 lg:col-span-3 min-h-[460px] flex flex-col">
+            <EventFeed />
           </div>
 
-          {/* Center: Shared Memory Box (Virtual File Tree + Editor) */}
-          <div className="col-span-6 min-h-[440px] flex flex-col">
+          {/* Center Column: Shared Memory Box (Virtual File Tree + Editor) */}
+          <div className="col-span-12 xl:col-span-6 lg:col-span-6 min-h-[460px] flex flex-col">
             <MemoryBox />
           </div>
 
-          {/* Right Area: Bot B */}
-          <div className="col-span-3 flex flex-col gap-4">
-            {botB ? (
-              <BotWorkArea
-                bot={botB}
-                side="right"
-                lastMessage={getLastMessageForBot(botB.id)}
-              />
-            ) : (
-              <div className="p-8 text-center text-xs text-slate-500 border border-dashed border-[#23252b] rounded-2xl">
-                No Teammate Bot Assigned
-              </div>
-            )}
-
-            {additionalBots[1] && (
-              <BotWorkArea
-                bot={additionalBots[1]}
-                side="grid"
-                lastMessage={getLastMessageForBot(additionalBots[1].id)}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Area: Compact Event Feed (Left) & User Director Chat (Right) */}
-        <div className="grid grid-cols-12 gap-4 mt-1">
-          <div className="col-span-7">
-            <EventFeed />
-          </div>
-          <div className="col-span-5">
+          {/* Right Column: Director Chat */}
+          <div className="col-span-12 xl:col-span-3 lg:col-span-3 min-h-[460px] flex flex-col">
             <DirectorChat />
           </div>
         </div>

@@ -4,6 +4,7 @@ import {
   Plus,
   Play,
   Trash2,
+  Edit3,
   Users,
   CheckCircle,
   Clock,
@@ -21,7 +22,7 @@ import { useProjectStore } from '../../stores/useProjectStore';
 import { useBotStore } from '../../stores/useBotStore';
 import { useUIStore } from '../../stores/useUIStore';
 import { BotFace } from '../office/BotFace';
-import type { KnowledgeItem } from '../../services/storage';
+import type { KnowledgeItem, Project } from '../../services/storage';
 import {
   pickLocalDirectory,
   readUploadedFiles,
@@ -29,7 +30,7 @@ import {
 } from '../../services/knowledgeService';
 
 export const ProjectsView: React.FC = () => {
-  const { projects, activeProject, selectProject, createProject, removeProject } = useProjectStore();
+  const { projects, activeProject, selectProject, createProject, updateProject, removeProject } = useProjectStore();
   const { bots } = useBotStore();
   const { setActiveView, showToast } = useUIStore();
 
@@ -40,6 +41,94 @@ export const ProjectsView: React.FC = () => {
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
   const [localFolder, setLocalFolder] = useState<string | null>(null);
   const [isLoadingFolder, setIsLoadingFolder] = useState(false);
+
+  // Edit Project State
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editGoal, setEditGoal] = useState('');
+  const [editBotIds, setEditBotIds] = useState<string[]>([]);
+  const [editMaxTurns, setEditMaxTurns] = useState<number>(15);
+  const [editKnowledgeItems, setEditKnowledgeItems] = useState<KnowledgeItem[]>([]);
+  const [editLocalFolder, setEditLocalFolder] = useState<string | null>(null);
+  const [isEditLoadingFolder, setIsEditLoadingFolder] = useState(false);
+
+  const openEditModal = (proj: Project) => {
+    setEditingProject(proj);
+    setEditName(proj.name);
+    setEditGoal(proj.goal);
+    setEditBotIds([...proj.botIds]);
+    setEditMaxTurns(proj.maxTurns || 15);
+    setEditKnowledgeItems([...(proj.knowledgeBase || [])]);
+    setEditLocalFolder(proj.localFolderPath || null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject) return;
+    if (!editName.trim()) {
+      showToast('Project name required', 'warn');
+      return;
+    }
+    if (!editGoal.trim()) {
+      showToast('Shared goal required', 'warn');
+      return;
+    }
+    if (editBotIds.length === 0) {
+      showToast('Please assign at least one bot to the project', 'warn');
+      return;
+    }
+
+    try {
+      await updateProject(editingProject.id, {
+        name: editName.trim(),
+        goal: editGoal.trim(),
+        botIds: editBotIds,
+        maxTurns: editMaxTurns,
+        knowledgeBase: editKnowledgeItems,
+        localFolderPath: editLocalFolder || undefined,
+      });
+      showToast(`Project "${editName}" updated successfully!`, 'success');
+      setEditingProject(null);
+    } catch (err: unknown) {
+      showToast(String(err), 'error');
+    }
+  };
+
+  const handleEditPickFolder = async () => {
+    setIsEditLoadingFolder(true);
+    try {
+      const res = await pickLocalDirectory(editingProject?.id || 'temp');
+      setEditLocalFolder(res.folderPath);
+      setEditKnowledgeItems((prev) => [...prev, ...res.items]);
+      showToast(`Linked folder "${res.folderPath}" with ${res.items.length} files!`, 'success');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('aborted') && !msg.includes('cancel')) {
+        showToast(msg, 'warn');
+      }
+    } finally {
+      setIsEditLoadingFolder(false);
+    }
+  };
+
+  const handleEditUploadFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    try {
+      const items = await readUploadedFiles(editingProject?.id || 'temp', e.target.files);
+      setEditKnowledgeItems((prev) => [...prev, ...items]);
+      showToast(`Added ${items.length} knowledge files!`, 'success');
+    } catch (err) {
+      showToast('Failed to process uploaded files', 'error');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  const toggleEditBotSelection = (botId: string) => {
+    setEditBotIds((prev) =>
+      prev.includes(botId) ? prev.filter((id) => id !== botId) : [...prev, botId]
+    );
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -340,15 +429,24 @@ export const ProjectsView: React.FC = () => {
                     </div>
                   </div>
 
-                  {projects.length > 1 && (
+                  <div className="flex items-center gap-1">
                     <button
-                      onClick={() => removeProject(proj.id)}
-                      className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 rounded-lg transition-colors"
-                      title="Delete project"
+                      onClick={() => openEditModal(proj)}
+                      className="p-1.5 text-[var(--text-muted)] hover:text-emerald-500 rounded-lg transition-colors"
+                      title="Edit project settings, bots, and knowledge"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                    {projects.length > 1 && (
+                      <button
+                        onClick={() => removeProject(proj.id)}
+                        className="p-1.5 text-[var(--text-muted)] hover:text-rose-500 rounded-lg transition-colors"
+                        title="Delete project"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <p className="text-xs text-[var(--text-muted)] line-clamp-2 leading-relaxed mb-3">
@@ -409,6 +507,203 @@ export const ProjectsView: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Edit Project Modal */}
+      {editingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--border-subtle)] mb-5">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--text-main)] font-heading">
+                    Edit Project: {editingProject.name}
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Update goal, turn limits, assigned bots, and knowledge base.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingProject(null)}
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)] transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-mono text-[var(--text-muted)] mb-1">
+                  Project Name
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-[var(--text-muted)] mb-1">
+                  Shared Project Goal / Vision
+                </label>
+                <textarea
+                  value={editGoal}
+                  onChange={(e) => setEditGoal(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-emerald-500 resize-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-[var(--text-muted)] mb-1">
+                  Max Turns (Milestone limit)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={editMaxTurns}
+                  onChange={(e) => setEditMaxTurns(Math.max(1, parseInt(e.target.value) || 15))}
+                  className="w-32 px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Bot Team Selection */}
+              <div>
+                <label className="block text-xs font-mono text-[var(--text-muted)] mb-2">
+                  Assigned Team Bots ({editBotIds.length} selected)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                  {bots.map((bot) => {
+                    const isSelected = editBotIds.includes(bot.id);
+                    return (
+                      <div
+                        key={bot.id}
+                        onClick={() => toggleEditBotSelection(bot.id)}
+                        className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-emerald-500/10 border-emerald-500/40 text-[var(--text-main)]'
+                            : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
+                        }`}
+                      >
+                        <BotFace
+                          shape={bot.avatarShape || 'squircle'}
+                          color={bot.avatarColor}
+                          status={bot.status}
+                          size={28}
+                          showEmoteBadge={false}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold truncate text-[var(--text-main)]">
+                            {bot.name}
+                          </div>
+                          <div className="text-[10px] text-[var(--text-muted)] capitalize truncate">
+                            {bot.role} • {bot.provider}
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}} // Handled by div onClick
+                          className="w-4 h-4 text-emerald-600 rounded border-[var(--border-subtle)] focus:ring-emerald-500"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Knowledge Base in Edit Modal */}
+              <div className="pt-2 border-t border-[var(--border-subtle)]">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-mono text-[var(--text-muted)] flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                    Knowledge Base ({editKnowledgeItems.length} items)
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="cursor-pointer px-2.5 py-1 text-[11px] bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1">
+                      <Upload className="w-3 h-3" />
+                      <span>Upload</span>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleEditUploadFiles}
+                        className="hidden"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleEditPickFolder}
+                      disabled={isEditLoadingFolder}
+                      className="px-2.5 py-1 text-[11px] bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] flex items-center gap-1"
+                    >
+                      {isEditLoadingFolder ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Folder className="w-3 h-3" />
+                      )}
+                      <span>Folder</span>
+                    </button>
+                  </div>
+                </div>
+
+                {editKnowledgeItems.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto space-y-1 bg-[var(--bg-panel)] p-2 rounded-xl border border-[var(--border-subtle)]">
+                    {editKnowledgeItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between text-[11px] font-mono text-[var(--text-main)] p-1 rounded hover:bg-[var(--bg-card)]"
+                      >
+                        <span className="truncate max-w-[280px]">{item.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-[var(--text-muted)]">
+                            {formatFileSize(item.size)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditKnowledgeItems((prev) =>
+                                prev.filter((i) => i.id !== item.id)
+                              )
+                            }
+                            className="text-[var(--text-muted)] hover:text-rose-500"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2.5 pt-4 border-t border-[var(--border-subtle)]">
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="px-4 py-2 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

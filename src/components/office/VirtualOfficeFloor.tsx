@@ -1,24 +1,16 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Coffee,
   Lock,
   Sparkles,
   Monitor,
-  Flame,
-  CheckCircle,
-  AlertTriangle,
   Folder,
-  Eye,
   Maximize2,
-  Minimize2,
   RotateCcw,
   ZoomIn,
   ZoomOut,
-  FileCode,
-  FileText,
   Laptop,
-  Palette,
   Tv,
   Gamepad2,
   Droplet,
@@ -26,11 +18,7 @@ import {
   Hammer,
   Bomb,
   HardHat,
-  Layers,
-  RefreshCw,
-  ExternalLink,
-  ChevronRight,
-  UserCheck,
+  Compass,
 } from 'lucide-react';
 import type { Bot, VirtualFile } from '../../services/storage';
 import { BotFace, type BotEmoteType } from './BotFace';
@@ -44,69 +32,88 @@ interface VirtualOfficeFloorProps {
   isExecutingTurn: boolean;
 }
 
-// 5 Leisure Activity Zones
+// 5 Leisure Activity Zones on the Right Side
 export type LeisureActivity = 'coffee' | 'arcade' | 'tv' | 'water_cooler' | 'library';
 
 interface LeisureZone {
   id: LeisureActivity;
   name: string;
   icon: React.ReactNode;
+  x: number; // percentage in canvas
+  y: number; // percentage in canvas
   desc: string;
   emote: BotEmoteType;
+  stationName: string;
 }
 
 const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
   coffee: {
     id: 'coffee',
     name: 'Coffee Barista Lounge',
-    icon: <Coffee className="w-5 h-5 text-amber-500" />,
-    desc: 'Sipping fresh espresso & recharging energy',
+    icon: <Coffee className="w-4 h-4 text-amber-500" />,
+    x: 72,
+    y: 22,
+    desc: 'Sipping espresso & recharging energy',
     emote: 'coffee',
+    stationName: '☕ Coffee Station',
   },
   arcade: {
     id: 'arcade',
     name: '8-Bit Arcade Playground',
-    icon: <Gamepad2 className="w-5 h-5 text-violet-400" />,
-    desc: 'Playing retro arcade games & testing reflexes',
+    icon: <Gamepad2 className="w-4 h-4 text-violet-400" />,
+    x: 90,
+    y: 22,
+    desc: 'Testing reflexes with retro games',
     emote: 'stars',
-  },
-  tv: {
-    id: 'tv',
-    name: 'Chill TV & Media Lounge',
-    icon: <Tv className="w-5 h-5 text-cyan-400" />,
-    desc: 'Watching tech talks & relaxing on plush sofa',
-    emote: 'normal',
-  },
-  water_cooler: {
-    id: 'water_cooler',
-    name: 'Water Cooler Chat Hub',
-    icon: <Droplet className="w-5 h-5 text-blue-400" />,
-    desc: 'Gossiping & sharing multi-model project notes',
-    emote: 'normal',
+    stationName: '🕹️ Arcade Depot',
   },
   library: {
     id: 'library',
     name: 'Knowledge Vault & Library',
-    icon: <BookOpen className="w-5 h-5 text-emerald-500" />,
-    desc: 'Reading project specifications & documentation',
+    icon: <BookOpen className="w-4 h-4 text-emerald-500" />,
+    x: 81,
+    y: 52,
+    desc: 'Reading project specs & documentation',
     emote: 'lightbulb',
+    stationName: '📚 Vault Terminal',
+  },
+  tv: {
+    id: 'tv',
+    name: 'Chill TV & Media Lounge',
+    icon: <Tv className="w-4 h-4 text-cyan-400" />,
+    x: 72,
+    y: 82,
+    desc: 'Watching tech talks & relaxing on sofa',
+    emote: 'normal',
+    stationName: '📺 Media Station',
+  },
+  water_cooler: {
+    id: 'water_cooler',
+    name: 'Water Cooler Chat Hub',
+    icon: <Droplet className="w-4 h-4 text-blue-400" />,
+    x: 90,
+    y: 82,
+    desc: 'Gossiping & sharing multi-model notes',
+    emote: 'normal',
+    stationName: '💧 Cooler Branch',
   },
 };
 
-// 6 Work Cabin Slots arranged in a zig-zag city street
+// 6 Spacious Cabin Workstation Slots on the Left Side
 interface CabinSlot {
-  id: string;
+  id: number;
   name: string;
-  streetSide: 'north' | 'south';
+  x: number; // percentage in canvas
+  y: number; // percentage in canvas
 }
 
 const CABIN_SLOTS: CabinSlot[] = [
-  { id: 'pod-1', name: 'Studio Pod Alpha', streetSide: 'north' },
-  { id: 'pod-2', name: 'Studio Pod Beta', streetSide: 'south' },
-  { id: 'pod-3', name: 'Studio Pod Gamma', streetSide: 'north' },
-  { id: 'pod-4', name: 'Studio Pod Delta', streetSide: 'south' },
-  { id: 'pod-5', name: 'Studio Pod Epsilon', streetSide: 'north' },
-  { id: 'pod-6', name: 'Studio Pod Zeta', streetSide: 'south' },
+  { id: 0, name: 'Studio Pod Alpha', x: 12, y: 22 },
+  { id: 1, name: 'Studio Pod Beta', x: 28, y: 22 },
+  { id: 2, name: 'Studio Pod Gamma', x: 12, y: 52 },
+  { id: 3, name: 'Studio Pod Delta', x: 28, y: 52 },
+  { id: 4, name: 'Studio Pod Epsilon', x: 12, y: 82 },
+  { id: 5, name: 'Studio Pod Zeta', x: 28, y: 82 },
 ];
 
 export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
@@ -114,128 +121,143 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   activeLocks,
   isExecutingTurn,
 }) => {
-  // Street Navigator Tab State: 'cabins' | 'vault' | 'campus' | 'all'
-  const [activeStreet, setActiveStreet] = useState<'cabins' | 'vault' | 'campus' | 'all'>('cabins');
+  const {
+    files,
+    activeProject,
+    assignFileToBot,
+    unassignFile,
+  } = useProjectStore();
+  const { showToast, setActiveView } = useUIStore();
 
-  // Canvas zoom & pan state (for Free Look mode)
-  const [canvasScale, setCanvasScale] = useState(1);
-  const [canvasPan, setCanvasPan] = useState({ x: 0, y: 0 });
-
-  // State for Bob the Builder and Rex the Destroyer animations
-  const [bobAnimation, setBobAnimation] = useState<{ active: boolean; targetSlot: string | null; botName: string }>({
-    active: false,
-    targetSlot: null,
-    botName: '',
-  });
-
-  const [rexAnimation, setRexAnimation] = useState<{ active: boolean; targetSlot: string | null; botName: string }>({
-    active: false,
-    targetSlot: null,
-    botName: '',
-  });
-
-  // Track built cabins per bot
-  const [builtCabins, setBuiltCabins] = useState<Record<string, { slot: string; file: VirtualFile }>>({});
-
-  // Passive ambient bot wandering between leisure zones
-  const [ambientBotZone, setAmbientBotZone] = useState<Record<string, LeisureActivity>>({});
-
-  // Modals
+  const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [showWallMonitorModal, setShowWallMonitorModal] = useState(false);
   const [showKnowledgeModal, setShowKnowledgeModal] = useState(false);
 
-  const { activeProject, files, assignFileToBot, unassignFile } = useProjectStore();
-  const { showToast, setActiveView } = useUIStore();
+  // Canvas Pan & Zoom (Free Look)
+  const [canvasScale, setCanvasScale] = useState(1);
+  const [canvasPan, setCanvasPan] = useState({ x: 0, y: 0 });
 
-  // Sync cabins with active file locks
+  // Passive ambient wandering spots for untasked bots
+  const [botLeisureSpots, setBotLeisureSpots] = useState<Record<string, LeisureActivity>>({});
+
+  // Dynamic Office Cabins: botId -> { slotIndex: number, file: VirtualFile }
+  const [builtCabins, setBuiltCabins] = useState<Record<string, { slot: number; file: VirtualFile }>>({});
+
+  // Animations for Bob (Creator) & Rex (Destroyer)
+  const [creatorBotState, setCreatorBotState] = useState<{ active: boolean; targetBotName: string; targetSlot: number } | null>(null);
+  const [destroyerBotState, setDestroyerBotState] = useState<{ active: boolean; targetBotName: string; targetSlot: number } | null>(null);
+
+  const isProjectStopped = activeProject?.status === 'idle';
+
+  // Synchronize cabins with currently locked/assigned files
   useEffect(() => {
-    const newCabins: Record<string, { slot: string; file: VirtualFile }> = {};
-    const lockedFiles = files.filter((f) => f.lockedBy);
+    const lockedFiles = files.filter((f) => Boolean(f.lockedBy));
+    const nextCabins: Record<string, { slot: number; file: VirtualFile }> = {};
 
-    lockedFiles.forEach((file, idx) => {
+    lockedFiles.forEach((file, index) => {
       if (file.lockedBy) {
-        const slot = CABIN_SLOTS[idx % CABIN_SLOTS.length].id;
-        newCabins[file.lockedBy] = { slot, file };
+        nextCabins[file.lockedBy] = {
+          slot: index % CABIN_SLOTS.length,
+          file,
+        };
       }
     });
 
-    setBuiltCabins(newCabins);
+    setBuiltCabins(nextCabins);
   }, [files]);
 
-  // Ambient wandering timer for free untasked bots
+  // Ambient wandering: every 5.5 seconds, pick an untasked bot to wander to another leisure zone
   useEffect(() => {
-    const activities: LeisureActivity[] = ['coffee', 'arcade', 'tv', 'water_cooler', 'library'];
+    if (isProjectStopped) return;
+
     const interval = setInterval(() => {
-      const freeBots = bots.filter((b) => !builtCabins[b.id]);
-      if (freeBots.length === 0) return;
+      const untaskedBots = bots.filter((b) => !builtCabins[b.id] && b.status !== 'working');
+      if (untaskedBots.length === 0) return;
 
-      const randomBot = freeBots[Math.floor(Math.random() * freeBots.length)];
-      const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+      const randomBot = untaskedBots[Math.floor(Math.random() * untaskedBots.length)];
+      const activities: LeisureActivity[] = ['coffee', 'arcade', 'tv', 'water_cooler', 'library'];
+      const nextActivity = activities[Math.floor(Math.random() * activities.length)];
 
-      setAmbientBotZone((prev) => ({
+      setBotLeisureSpots((prev) => ({
         ...prev,
-        [randomBot.id]: randomActivity,
+        [randomBot.id]: nextActivity,
       }));
-    }, 4500);
+    }, 5500);
 
     return () => clearInterval(interval);
-  }, [bots, builtCabins]);
+  }, [bots, builtCabins, isProjectStopped]);
 
-  // Handle assigning file -> triggers Bob the Builder
+  // Trigger Bob the Builder
+  const triggerCreatorBot = (targetBot: Bot, slotIndex: number) => {
+    setCreatorBotState({ active: true, targetBotName: targetBot.name, targetSlot: slotIndex });
+    setTimeout(() => {
+      setCreatorBotState(null);
+    }, 2200);
+  };
+
+  // Trigger Rex the Destroyer
+  const triggerDestroyerBot = (targetBotName: string, slotIndex: number) => {
+    setDestroyerBotState({ active: true, targetBotName, targetSlot: slotIndex });
+    setTimeout(() => {
+      setDestroyerBotState(null);
+    }, 2200);
+  };
+
+  // User assigns file to bot
   const handleAssignTask = async (fileId: string, botId: string) => {
-    const bot = bots.find((b) => b.id === botId);
-    const file = files.find((f) => f.id === fileId);
-    if (!bot || !file) return;
+    const targetBot = bots.find((b) => b.id === botId);
+    if (!targetBot) return;
 
     // Pick first open slot
     const usedSlots = Object.values(builtCabins).map((c) => c.slot);
     const openSlot = CABIN_SLOTS.find((s) => !usedSlots.includes(s.id)) || CABIN_SLOTS[0];
 
-    // Trigger Bob the Builder
-    setBobAnimation({
-      active: true,
-      targetSlot: openSlot.id,
-      botName: bot.name,
-    });
+    triggerCreatorBot(targetBot, openSlot.id);
 
-    setTimeout(async () => {
-      await assignFileToBot(fileId, botId, bot.name);
-      setBuiltCabins((prev) => ({
-        ...prev,
-        [botId]: { slot: openSlot.id, file },
-      }));
-      setBobAnimation({ active: false, targetSlot: null, botName: '' });
-      showToast(`👷 Bob built a custom cabin for ${bot.name}!`, 'success');
-    }, 1200);
+    const success = await assignFileToBot(fileId, targetBot.id, targetBot.name);
+    if (success) {
+      showToast(`👷 Bob built a custom studio for ${targetBot.name}!`, 'success');
+    }
   };
 
-  // Handle releasing file -> triggers Rex the Destroyer
+  // User relieves bot / unassigns file
   const handleUnassignTask = async (fileId: string) => {
     const file = files.find((f) => f.id === fileId);
     if (!file || !file.lockedBy) return;
 
     const botId = file.lockedBy;
-    const bot = bots.find((b) => b.id === botId);
-    const cabin = builtCabins[botId];
+    const targetBot = bots.find((b) => b.id === botId);
+    const botName = targetBot?.name || 'Bot';
+    const slotIndex = builtCabins[botId]?.slot ?? 0;
 
+    triggerDestroyerBot(botName, slotIndex);
+    await unassignFile(fileId);
+    showToast(`🚜 Rex demolished the studio! ${botName} is relieved to leisure campus.`, 'info');
+  };
+
+  // Calculate bot coordinates on the floor
+  const getBotPosition = (bot: Bot, index: number) => {
+    const cabin = builtCabins[bot.id];
+
+    // If bot has a cabin on the left
     if (cabin) {
-      setRexAnimation({
-        active: true,
-        targetSlot: cabin.slot,
-        botName: bot?.name || 'Bot',
-      });
+      const slot = CABIN_SLOTS[cabin.slot] || CABIN_SLOTS[0];
+      return { x: slot.x + 2.5, y: slot.y + 1.5 };
     }
 
-    setTimeout(async () => {
-      await unassignFile(fileId);
-      setBuiltCabins((prev) => {
-        const next = { ...prev };
-        delete next[botId];
-        return next;
-      });
-      setRexAnimation({ active: false, targetSlot: null, botName: '' });
-      showToast(`🚜 Rex demolished the cabin and released the file!`, 'info');
-    }, 1200);
+    // Untasked bots wander in the 5 leisure spots on the right
+    const currentActivity = botLeisureSpots[bot.id] || (
+      index % 5 === 0 ? 'coffee' :
+      index % 5 === 1 ? 'arcade' :
+      index % 5 === 2 ? 'tv' :
+      index % 5 === 3 ? 'water_cooler' : 'library'
+    );
+
+    const zone = LEISURE_ZONES[currentActivity];
+    const offsetX = ((index % 3) - 1) * 3.5;
+    const offsetY = Math.floor(index / 3) * 2.8;
+
+    return { x: zone.x + offsetX, y: zone.y + offsetY };
   };
 
   // Live bundled preview HTML
@@ -257,76 +279,19 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
   return (
     <div className="relative w-full rounded-3xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-xl mb-6 select-none transition-colors duration-200">
-      {/* Top Colony Header & Street Switcher */}
-      <div className="px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 mr-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-bold text-sm text-[var(--text-main)] font-heading">
-              Colony Streets
-            </span>
-          </div>
-
-          {/* Street Switcher Tabs */}
-          <div className="flex items-center gap-1 bg-[var(--bg-card)] p-1 rounded-2xl border border-[var(--border-subtle)] shadow-sm">
-            <button
-              onClick={() => setActiveStreet('cabins')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                activeStreet === 'cabins'
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-sm font-bold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
-            >
-              <span>🚧 Street 1: Cabins</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-500 font-bold">
-                {Object.keys(builtCabins).length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveStreet('vault')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                activeStreet === 'vault'
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-sm font-bold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
-            >
-              <span>🏛️ Street 2: Vault & App</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-500 font-bold">
-                {files.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveStreet('campus')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                activeStreet === 'campus'
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-sm font-bold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
-            >
-              <span>☕ Street 3: Campus</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-500 font-bold">
-                5 spots
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveStreet('all')}
-              className={`hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                activeStreet === 'all'
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-sm font-bold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
-              title="Colony Free-Look Panorama"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-              <span>Free Look</span>
-            </button>
-          </div>
+      {/* Top Floor Header & Canvas Toolbar */}
+      <div className="px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        <div className="flex items-center gap-2.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-bold text-sm text-[var(--text-main)] font-heading">
+            Colony Virtual Office Floor
+          </span>
+          <span className="text-[11px] text-[var(--text-muted)] hidden md:inline">
+            • Free Look Canvas • Connected Railway Transit Line Network
+          </span>
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls & Zoom */}
         <div className="flex items-center gap-2">
           {activeProject?.knowledgeBase && activeProject.knowledgeBase.length > 0 && (
             <button
@@ -356,580 +321,602 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             <span>Build Cabin (Bob)</span>
           </button>
 
-          {activeStreet === 'all' && (
-            <div className="flex items-center gap-1 border-l border-[var(--border-subtle)] pl-2">
-              <button
-                onClick={() => setCanvasScale((s) => Math.min(1.4, s + 0.1))}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
-                title="Zoom In"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setCanvasScale((s) => Math.max(0.7, s - 0.1))}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
-                title="Zoom Out"
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  setCanvasScale(1);
-                  setCanvasPan({ x: 0, y: 0 });
-                }}
-                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
-                title="Reset View"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
+          {/* Pan & Zoom Controls */}
+          <div className="flex items-center gap-1 border-l border-[var(--border-subtle)] pl-2">
+            <button
+              onClick={() => setCanvasScale((s) => Math.min(1.4, s + 0.1))}
+              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setCanvasScale((s) => Math.max(0.65, s - 0.1))}
+              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => {
+                setCanvasScale(1);
+                setCanvasPan({ x: 0, y: 0 });
+              }}
+              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-elevated)]"
+              title="Reset View"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* STREET 1: WORK CABINS & STUDIOS (STUDIO DISTRICT)                         */}
-      {/* ========================================================================= */}
-      {activeStreet === 'cabins' && (
-        <div className="p-6 bg-[var(--bg-app)] min-h-[520px] flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Laptop className="w-4 h-4 text-emerald-500" />
-              <h3 className="font-bold text-sm text-[var(--text-main)] font-heading">
-                Street 1: Studio Pod Cabins (Assigned Bots Work Here)
-              </h3>
-            </div>
-            <span className="text-xs text-[var(--text-muted)] font-mono">
-              Bob (`👷 🔨`) builds cabins • Rex (`🚜 💥`) demolishes them
-            </span>
+      {/* Draggable & Pannable Interactive Free-Look Canvas Viewport */}
+      <div className="relative w-full h-[660px] overflow-hidden cursor-grab active:cursor-grabbing bg-[var(--bg-app)]">
+        <motion.div
+          drag
+          dragElastic={0.08}
+          dragConstraints={{ left: -400, right: 400, top: -240, bottom: 240 }}
+          style={{ scale: canvasScale, x: canvasPan.x, y: canvasPan.y }}
+          className="relative w-[1440px] h-[740px] mx-auto origin-center transition-transform"
+        >
+          {/* Blueprint Grid Background */}
+          <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.07] bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+
+          {/* ============================================================ */}
+          {/* ROAD & RAILWAY TRANSIT LINE SYSTEM (SVG OVERLAY)             */}
+          {/* ============================================================ */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+            <defs>
+              {/* Glowing filter for neon railway tracks */}
+              <filter id="trackGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <linearGradient id="railGradEmerald" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+                <stop offset="50%" stopColor="#34d399" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0.8" />
+              </linearGradient>
+            </defs>
+
+            {/* --- UNDERBED HIGHWAY ROADWAYS --- */}
+            {/* Artery 1: West Cabins Terminal (x: 540) to Central Vault (x: 720) */}
+            <path
+              d="M 288 414 L 720 414"
+              stroke="rgba(16, 185, 129, 0.08)"
+              strokeWidth="32"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Artery 2: Central Vault (x: 720) to East Campus Depot (x: 900) */}
+            <path
+              d="M 720 414 L 920 414"
+              stroke="rgba(16, 185, 129, 0.08)"
+              strokeWidth="32"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* North Branch: East Campus Depot up to Coffee & Arcade */}
+            <path
+              d="M 920 414 L 920 200 L 1300 200"
+              stroke="rgba(16, 185, 129, 0.08)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+            {/* South Branch: East Campus Depot down to TV & Water Cooler */}
+            <path
+              d="M 920 414 L 920 620 L 1300 620"
+              stroke="rgba(16, 185, 129, 0.08)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+            {/* Mid Branch: East Campus Depot into Library / Knowledge Vault */}
+            <path
+              d="M 920 414 L 1166 414"
+              stroke="rgba(16, 185, 129, 0.08)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              fill="none"
+            />
+
+            {/* Cabins North Feeder (Pods 0, 1) */}
+            <path
+              d="M 288 200 L 288 414"
+              stroke="rgba(16, 185, 129, 0.08)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Cabins South Feeder (Pods 4, 5) */}
+            <path
+              d="M 288 620 L 288 414"
+              stroke="rgba(16, 185, 129, 0.08)"
+              strokeWidth="28"
+              strokeLinecap="round"
+              fill="none"
+            />
+
+            {/* --- RAILWAY SLEEPER TIES (CROSS-TIES) --- */}
+            <path
+              d="M 172 414 L 720 414 M 720 414 L 920 414 M 920 414 L 920 200 L 1300 200 M 920 414 L 920 620 L 1300 620 M 920 414 L 1166 414 M 288 200 L 288 620"
+              stroke="rgba(16, 185, 129, 0.3)"
+              strokeWidth="14"
+              strokeDasharray="2 12"
+              fill="none"
+            />
+
+            {/* --- TWIN RAILWAY TRACK RAILS --- */}
+            <path
+              d="M 172 411 L 720 411 M 720 411 L 920 411 M 920 411 L 920 197 L 1300 197 M 920 411 L 920 617 L 1300 617 M 920 411 L 1166 411 M 285 200 L 285 620"
+              stroke="rgba(16, 185, 129, 0.45)"
+              strokeWidth="2"
+              fill="none"
+            />
+            <path
+              d="M 172 417 L 720 417 M 720 417 L 920 417 M 920 417 L 920 203 L 1300 203 M 920 417 L 920 623 L 1300 623 M 920 417 L 1166 417 M 291 200 L 291 620"
+              stroke="rgba(16, 185, 129, 0.45)"
+              strokeWidth="2"
+              fill="none"
+            />
+
+            {/* --- ANIMATED CENTER PULSE ENERGY LINE --- */}
+            <path
+              d="M 172 414 L 720 414 M 720 414 L 920 414 M 920 414 L 920 200 L 1300 200 M 920 414 L 920 620 L 1300 620 M 920 414 L 1166 414 M 288 200 L 288 620"
+              stroke="#34d399"
+              strokeWidth="2.5"
+              strokeDasharray="8 16"
+              strokeLinecap="round"
+              filter="url(#trackGlow)"
+              className="animate-pulse"
+              fill="none"
+            />
+
+            {/* Station Junction Nodes */}
+            <circle cx="288" cy="414" r="7" fill="#10b981" stroke="#ffffff" strokeWidth="2.5" />
+            <circle cx="720" cy="414" r="8" fill="#10b981" stroke="#ffffff" strokeWidth="3" />
+            <circle cx="920" cy="414" r="7" fill="#10b981" stroke="#ffffff" strokeWidth="2.5" />
+            <circle cx="1036" cy="200" r="5" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="1296" cy="200" r="5" fill="#a78bfa" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="1166" cy="414" r="6" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="1036" cy="620" r="5" fill="#06b6d4" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="1296" cy="620" r="5" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
+          </svg>
+
+          {/* Central Colony Concourse Label */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[var(--bg-panel)]/80 backdrop-blur-sm px-4 py-1.5 rounded-full border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-muted)] z-10 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <span className="font-bold text-[var(--text-main)]">Colony Transit Network</span>
+            <span>(Cabins ↔ Vault ↔ Recreation Campus)</span>
           </div>
 
-          {/* Bob the Builder Active Construction Banner */}
-          {bobAnimation.active && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-between shadow-lg"
-            >
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl animate-bounce">👷</span>
-                <div>
-                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                    Bob the Builder is constructing a Studio Cabin for {bobAnimation.botName}...
-                  </div>
-                  <div className="text-[11px] text-[var(--text-muted)]">
-                    Setting up desk, PC monitor, local git repo, and coffee mug!
-                  </div>
-                </div>
-              </div>
-              <Hammer className="w-5 h-5 text-emerald-500 animate-spin" />
-            </motion.div>
-          )}
-
-          {/* Rex the Destroyer Active Demolition Banner */}
-          {rexAnimation.active && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-3 bg-rose-500/15 border border-rose-500/30 rounded-2xl flex items-center justify-between shadow-lg"
-            >
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl animate-pulse">🚜</span>
-                <div>
-                  <div className="text-xs font-bold text-rose-500 font-mono">
-                    Rex the Demolition Bot is tearing down cabin for {rexAnimation.botName}!
-                  </div>
-                  <div className="text-[11px] text-[var(--text-muted)]">
-                    Task complete • Relieving bot to recreation campus.
-                  </div>
-                </div>
-              </div>
-              <Bomb className="w-5 h-5 text-rose-500 animate-bounce" />
-            </motion.div>
-          )}
-
-          {/* Zig-Zag Cabin City Plots Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {CABIN_SLOTS.map((slot) => {
-              const assignedEntry = Object.entries(builtCabins).find(([_, val]) => val.slot === slot.id);
-              const assignedBotId = assignedEntry?.[0];
-              const assignedFile = assignedEntry?.[1]?.file;
-              const assignedBot = bots.find((b) => b.id === assignedBotId);
-
-              return (
-                <div
-                  key={slot.id}
-                  className={`relative rounded-3xl border p-4 transition-all duration-300 flex flex-col justify-between min-h-[210px] ${
-                    assignedBot
-                      ? 'bg-[var(--bg-card)] border-emerald-500/40 shadow-xl shadow-emerald-500/5'
-                      : 'border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/30 hover:border-emerald-500/30'
-                  }`}
-                >
-                  {/* Cabin Header Bar */}
-                  <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-[var(--text-main)] font-mono">{slot.name}</span>
-                      <span className="text-[10px] uppercase font-mono px-1.5 py-0.2 rounded bg-[var(--bg-panel)] text-[var(--text-muted)]">
-                        {slot.streetSide} street
-                      </span>
-                    </div>
-                    {assignedBot ? (
-                      <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        ACTIVE
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono text-[var(--text-faint)]">Empty Lot</span>
-                    )}
-                  </div>
-
-                  {/* Cabin Interior */}
-                  {assignedBot && assignedFile ? (
-                    <div className="my-3 space-y-3">
-                      {/* Occupant Bot Header */}
-                      <div className="flex items-center gap-3">
-                        <div className="shrink-0 p-1 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)]">
-                          <BotFace
-                            shape={assignedBot.avatarShape || 'star'}
-                            color={assignedBot.avatarColor || '#10b981'}
-                            status={assignedBot.status}
-                            emote="normal"
-                            size={38}
-                            showEmoteBadge={true}
-                          />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-[var(--text-main)] flex items-center gap-1">
-                            <span>{assignedBot.name}</span>
-                            <span className="text-[10px] text-[var(--text-muted)] capitalize">({assignedBot.role})</span>
-                          </div>
-                          <div className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-0.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            <span>Status: {assignedBot.status}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Locked File Work Desk */}
-                      <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-2xl p-2.5">
-                        <div className="flex items-center justify-between text-[11px] font-mono mb-1">
-                          <div className="flex items-center gap-1.5 truncate">
-                            <Monitor className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                            <span className="font-bold text-[var(--text-main)] truncate">{assignedFile.path}</span>
-                          </div>
-                          <span className="text-[10px] text-amber-500 font-bold">🔒 LOCKED</span>
-                        </div>
-
-                        {/* Reassign / Release Controls */}
-                        <div className="flex items-center justify-between pt-1 text-[10px] font-mono border-t border-[var(--border-subtle)]">
-                          <span className="text-[var(--text-muted)]">Reassign:</span>
-                          <select
-                            value={assignedBot.id}
-                            onChange={async (e) => {
-                              const newBotId = e.target.value;
-                              if (newBotId && newBotId !== assignedBot.id) {
-                                await handleAssignTask(assignedFile.id, newBotId);
-                              }
-                            }}
-                            className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded px-1.5 py-0.5 text-[var(--text-main)] focus:border-emerald-500"
-                          >
-                            {bots.map((b) => (
-                              <option key={b.id} value={b.id}>
-                                {b.name} ({b.role})
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            onClick={() => handleUnassignTask(assignedFile.id)}
-                            className="text-rose-500 hover:underline font-bold"
-                            title="Demolish cabin & release file"
-                          >
-                            Release 🚜
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="my-auto text-center py-6">
-                      <div className="w-10 h-10 rounded-2xl border border-dashed border-[var(--border-subtle)] mx-auto mb-2 flex items-center justify-center text-lg opacity-40">
-                        🏗️
-                      </div>
-                      <p className="text-xs text-[var(--text-muted)] font-mono">Lot Ready for Construction</p>
-                      <button
-                        onClick={() => {
-                          const freeBot = bots.find((b) => !builtCabins[b.id]);
-                          const freeFile = files.find((f) => !f.lockedBy) || files[0];
-                          if (freeBot && freeFile) {
-                            handleAssignTask(freeFile.id, freeBot.id);
-                          } else {
-                            showToast('Create another bot or add a file first!', 'info');
-                          }
-                        }}
-                        className="mt-2 px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-[11px] font-mono font-semibold transition-colors"
-                      >
-                        + Assign Task to Build
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Cabin Footer */}
-                  <div className="text-[10px] font-mono text-[var(--text-faint)] flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
-                    <span>Street Lamp #0{slot.id.replace('pod-', '')} 💡</span>
-                    <span>{assignedBot ? `Tokens: ${assignedBot.tokenUsage}` : 'Lot Available'}</span>
-                  </div>
-                </div>
-              );
-            })}
+          {/* ============================================================ */}
+          {/* LEFT SIDE: 6 WORK CABIN SLOTS (SPACIOUS & EXPANDED)          */}
+          {/* ============================================================ */}
+          <div className="absolute top-6 left-8 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-2 z-10">
+            <Laptop className="w-4 h-4 text-emerald-500" />
+            <span>WORK STUDIOS & CABINS DISTRICT</span>
           </div>
-        </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* STREET 2: MEMORY VAULT & LIVE APP MONITOR (TECH DISTRICT)                 */}
-      {/* ========================================================================= */}
-      {activeStreet === 'vault' && (
-        <div className="p-6 bg-[var(--bg-app)] min-h-[520px]">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left: Memory Box Vault File Tree & Reassign Controls */}
-            <div className="lg:col-span-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-5 shadow-lg flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-4">
-                  <div className="flex items-center gap-2">
-                    <Folder className="w-5 h-5 text-emerald-500" />
-                    <div>
-                      <h3 className="font-bold text-sm text-[var(--text-main)] font-heading">
-                        Central Memory Vault
-                      </h3>
-                      <p className="text-[11px] text-[var(--text-muted)] font-mono">
-                        Virtual filesystem shared across all bot models
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-mono font-bold">
-                    {files.length} Files
+          {CABIN_SLOTS.map((slot) => {
+            const assignedBotEntry = Object.entries(builtCabins).find(
+              ([_, val]) => val.slot === slot.id
+            );
+            const assignedBotId = assignedBotEntry?.[0];
+            const assignedFile = assignedBotEntry?.[1]?.file;
+            const assignedBot = bots.find((b) => b.id === assignedBotId);
+
+            return (
+              <div
+                key={slot.id}
+                style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
+                className={`absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl border transition-all duration-300 flex flex-col justify-between p-3.5 z-10 ${
+                  assignedBot
+                    ? 'bg-[var(--bg-card)] border-emerald-500/60 shadow-lg shadow-emerald-500/10'
+                    : 'border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/30 hover:border-emerald-500/30'
+                }`}
+              >
+                {/* Cabin Header */}
+                <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)]">
+                  <span className="text-[11px] font-mono font-bold text-[var(--text-main)] truncate">
+                    {slot.name}
                   </span>
+                  {assignedBot ? (
+                    <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-500 font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Active
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-[var(--text-faint)]">Empty Lot</span>
+                  )}
                 </div>
 
-                {/* File Cards List */}
-                <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
-                  {files.map((file) => {
-                    const lockInfo = activeLocks[file.path.toLowerCase()];
-                    const assignedBot = lockInfo ? bots.find((b) => b.id === lockInfo.botId) : null;
+                {/* Desk Furniture or File Task */}
+                {assignedBot && assignedFile ? (
+                  <div className="flex-1 flex flex-col items-center justify-center my-1 bg-[var(--bg-panel)] rounded-xl p-2 border border-[var(--border-subtle)] shadow-inner">
+                    <div className="flex items-center gap-1.5 mb-1 max-w-full">
+                      <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span className="text-[10px] font-bold font-mono text-[var(--text-main)] truncate">
+                        {assignedFile.path}
+                      </span>
+                    </div>
 
-                    return (
-                      <div
-                        key={file.id}
-                        className="p-3 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-2xl flex flex-col gap-2 hover:border-emerald-500/40 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 truncate">
-                            <FileCode className="w-4 h-4 text-emerald-500 shrink-0" />
-                            <span className="font-mono text-xs font-bold text-[var(--text-main)] truncate">
-                              {file.path}
-                            </span>
-                            <span className="text-[10px] text-[var(--text-faint)] font-mono">
-                              ({file.content.length} chars)
-                            </span>
-                          </div>
-
-                          {/* Lock & Assignment Badge */}
-                          {lockInfo ? (
-                            <span className="text-[10px] font-mono text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 font-bold">
-                              <Lock className="w-2.5 h-2.5" />
-                              {lockInfo.botName}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
-                              Free
-                            </span>
-                          )}
+                    <div className="flex items-center gap-2 mt-1">
+                      <BotFace
+                        shape={assignedBot.avatarShape || 'squircle'}
+                        color={assignedBot.avatarColor || '#10b981'}
+                        status={assignedBot.status}
+                        emote="lightbulb"
+                        size={28}
+                        showEmoteBadge={false}
+                      />
+                      <div className="text-left">
+                        <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                          {assignedBot.name}
                         </div>
-
-                        {/* Bot Auto-Summary Display */}
-                        {file.lastSummary && (
-                          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1.5 bg-emerald-500/10 p-1.5 rounded-xl border border-emerald-500/20 truncate">
-                            <Sparkles className="w-3 h-3 text-emerald-500 shrink-0" />
-                            <span className="truncate">Summary: {file.lastSummary}</span>
-                          </div>
-                        )}
-
-                        {/* Reassign / Release Dropdown */}
-                        <div className="flex items-center justify-between text-[11px] font-mono pt-1 border-t border-[var(--border-subtle)]">
-                          <span className="text-[var(--text-muted)]">Assigned Bot:</span>
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={file.lockedBy || ''}
-                              onChange={async (e) => {
-                                const botId = e.target.value;
-                                if (!botId) {
-                                  await handleUnassignTask(file.id);
-                                } else {
-                                  await handleAssignTask(file.id, botId);
-                                }
-                              }}
-                              className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[11px] rounded-lg px-2 py-0.5 text-[var(--text-main)] focus:border-emerald-500 cursor-pointer"
-                            >
-                              <option value="">(Unassigned / Free)</option>
-                              {bots.map((b) => (
-                                <option key={b.id} value={b.id}>
-                                  {b.name} ({b.role})
-                                </option>
-                              ))}
-                            </select>
-                            {file.lockedBy && (
-                              <button
-                                onClick={() => handleUnassignTask(file.id)}
-                                className="text-[10px] text-rose-500 hover:underline font-bold"
-                              >
-                                Release
-                              </button>
-                            )}
-                          </div>
+                        <div className="text-[9px] text-[var(--text-muted)] capitalize">
+                          {assignedBot.role}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] font-mono flex items-center justify-between">
-                <span>Stored in browser IndexedDB (AES-GCM encrypted)</span>
-                <button
-                  onClick={() => setActiveView('office')}
-                  className="text-emerald-500 hover:underline font-bold"
-                >
-                  Open Code Editor →
-                </button>
-              </div>
-            </div>
-
-            {/* Right: Full-Size Live Sandboxed App Monitor */}
-            <div className="lg:col-span-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-5 shadow-lg flex flex-col justify-between">
-              <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-4">
-                <div className="flex items-center gap-2">
-                  <Monitor className="w-5 h-5 text-emerald-500" />
-                  <div>
-                    <h3 className="font-bold text-sm text-[var(--text-main)] font-heading">
-                      Live Built App Sandbox
-                    </h3>
-                    <p className="text-[11px] text-[var(--text-muted)] font-mono">
-                      Real-time compilation of index.html, styles, and scripts
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowWallMonitorModal(true)}
-                    className="p-1.5 rounded-xl border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)] transition-colors"
-                    title="Fullscreen Sandbox"
-                  >
-                    <Maximize2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Iframe Preview */}
-              <div className="w-full h-[380px] rounded-2xl overflow-hidden border border-[var(--border-subtle)] bg-slate-950 shadow-inner">
-                <iframe
-                  title="Colony Live Preview"
-                  srcDoc={bundledHtml}
-                  sandbox="allow-scripts allow-modals"
-                  className="w-full h-full border-0"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)] font-mono flex items-center justify-between">
-                <span>Sandboxed iframe with zero external script access</span>
-                <span className="text-emerald-500 font-bold">● Running Live</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* STREET 3: RECREATION CAMPUS & ACTIVITIES (FUN DISTRICT)                   */}
-      {/* ========================================================================= */}
-      {activeStreet === 'campus' && (
-        <div className="p-6 bg-[var(--bg-app)] min-h-[520px]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Gamepad2 className="w-4 h-4 text-emerald-500" />
-              <h3 className="font-bold text-sm text-[var(--text-main)] font-heading">
-                Street 3: Recreation Campus (Untasked Bots Chill Here)
-              </h3>
-            </div>
-            <span className="text-xs text-[var(--text-muted)] font-mono">
-              Free bots roam between 5 fun spots with ambient movement
-            </span>
-          </div>
-
-          {/* 5 Fun Activity Zones Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {Object.values(LEISURE_ZONES).map((zone, idx) => {
-              // Find bots currently visiting this zone
-              const zoneBots = bots.filter((b) => {
-                if (builtCabins[b.id]) return false; // Assigned bots are in their cabins
-                const currentAct = ambientBotZone[b.id] || (
-                  idx === 0 ? 'coffee' :
-                  idx === 1 ? 'arcade' :
-                  idx === 2 ? 'tv' :
-                  idx === 3 ? 'water_cooler' : 'library'
-                );
-                return currentAct === zone.id;
-              });
-
-              return (
-                <div
-                  key={zone.id}
-                  onClick={() => {
-                    if (zone.id === 'library') setShowKnowledgeModal(true);
-                  }}
-                  className={`bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-4 shadow-lg flex flex-col justify-between min-h-[220px] transition-all duration-300 hover:border-emerald-500/40 ${
-                    zone.id === 'library' ? 'cursor-pointer' : ''
-                  }`}
-                >
-                  {/* Zone Header */}
-                  <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-2xl bg-[var(--bg-panel)] border border-[var(--border-subtle)]">
-                        {zone.icon}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-xs text-[var(--text-main)] font-mono">{zone.name}</h4>
-                        <span className="text-[10px] text-[var(--text-muted)]">{zone.desc}</span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Bots in this zone */}
-                  <div className="my-4">
-                    {zoneBots.length === 0 ? (
-                      <div className="text-center py-6 text-xs text-[var(--text-faint)] font-mono">
-                        No bots currently in this zone
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 flex-wrap">
-                        {zoneBots.map((bot) => (
-                          <div
-                            key={bot.id}
-                            className="flex flex-col items-center gap-1 p-2 bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] shadow-sm animate-in zoom-in-95 duration-200"
-                          >
-                            <BotFace
-                              shape={bot.avatarShape || 'star'}
-                              color={bot.avatarColor || '#10b981'}
-                              status={bot.status}
-                              emote={zone.emote}
-                              size={34}
-                              showEmoteBadge={true}
-                            />
-                            <span className="text-[10px] font-bold text-[var(--text-main)] font-mono">{bot.name}</span>
-                            <span className="text-[9px] text-[var(--text-muted)] capitalize">({bot.role})</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <button
+                      onClick={() => handleUnassignTask(assignedFile.id)}
+                      className="mt-2 text-[10px] text-rose-500 hover:text-rose-400 font-bold underline font-mono transition-colors"
+                      title="Demolish cabin with Rex and relieve bot"
+                    >
+                      (Relieve Bot / Demolish)
+                    </button>
                   </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-2">
+                    <span className="text-xl opacity-40 mb-1">🏗️</span>
+                    <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                      Ready for Bob to build
+                    </span>
+                  </div>
+                )}
 
-                  {/* Zone Footer */}
-                  <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[10px] font-mono text-[var(--text-muted)]">
-                    <span>{zoneBots.length} bots chilling</span>
-                    {zone.id === 'library' && <span className="text-emerald-500 font-bold">Inspect Docs →</span>}
-                  </div>
+                {/* Cabin Footer Waypoint */}
+                <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
+                  <span>Track Station #{slot.id + 1}</span>
+                  {assignedBot && <span className="text-emerald-500 font-semibold">Locked</span>}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+              </div>
+            );
+          })}
 
-      {/* ========================================================================= */}
-      {/* FREE LOOK / PANORAMIC VIEWPORT                                           */}
-      {/* ========================================================================= */}
-      {activeStreet === 'all' && (
-        <div className="relative w-full h-[580px] overflow-hidden cursor-grab active:cursor-grabbing bg-[var(--bg-app)]">
-          <motion.div
-            drag
-            dragElastic={0.08}
-            dragConstraints={{ left: -300, right: 300, top: -200, bottom: 200 }}
-            style={{ scale: canvasScale, x: canvasPan.x, y: canvasPan.y }}
-            className="relative w-[1200px] h-[680px] mx-auto origin-center transition-transform"
+          {/* ============================================================ */}
+          {/* CENTER: WALL MONITOR BILLBOARD & SHARED MEMORY VAULT         */}
+          {/* ============================================================ */}
+          {/* Live App Monitor Billboard (Top Center) */}
+          <div
+            onClick={() => setShowWallMonitorModal(true)}
+            style={{ left: '50%', top: '16%' }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 w-80 h-28 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 shadow-xl hover:border-emerald-500 cursor-pointer transition-all group z-20"
           >
-            {/* Floor Isometric Grid Blueprint */}
-            <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06] bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px]" />
+            <div className="flex items-center justify-between text-[11px] font-mono mb-1 text-[var(--text-muted)]">
+              <span className="flex items-center gap-1.5 font-bold text-[var(--text-main)]">
+                <Monitor className="w-3.5 h-3.5 text-emerald-500" /> Live Built App Monitor
+              </span>
+              <Maximize2 className="w-3.5 h-3.5 group-hover:scale-110 text-emerald-500 transition-transform" />
+            </div>
+            <div className="w-full h-16 bg-slate-950 rounded-xl overflow-hidden border border-[var(--border-subtle)] pointer-events-none shadow-inner">
+              <iframe
+                title="Mini Preview"
+                srcDoc={bundledHtml}
+                className="w-[200%] h-[200%] scale-50 origin-top-left border-0"
+                sandbox="allow-scripts"
+              />
+            </div>
+          </div>
 
-            {/* Central Dividing Walkway */}
-            <div className="absolute top-0 bottom-0 left-[48%] w-12 border-x border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/30 flex items-center justify-center pointer-events-none">
-              <span className="text-[10px] uppercase font-mono tracking-widest text-[var(--text-faint)] rotate-90 whitespace-nowrap">
-                Central Colony Concourse
+          {/* Central Memory Box Code Vault (Center Spine) */}
+          <div
+            style={{ left: '50%', top: '56%' }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 w-76 p-4 rounded-3xl bg-[var(--bg-card)] border-2 border-emerald-500/60 shadow-2xl shadow-emerald-500/15 flex flex-col gap-2.5 z-20"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
+              <span className="text-xs font-bold font-mono text-[var(--text-main)] flex items-center gap-2">
+                <Folder className="w-4 h-4 text-emerald-500" />
+                <span>Central Memory Vault</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                {files.length} Files
               </span>
             </div>
 
-            {/* Cabins Summary on Left */}
-            <div className="absolute top-4 left-4 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-1.5">
-              <Laptop className="w-4 h-4 text-emerald-500" />
-              <span>STREET 1: WORK CABINS</span>
-            </div>
+            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+              {files.map((f) => {
+                const isLocked = Boolean(f.lockedBy);
+                const lockerBot = bots.find((b) => b.id === f.lockedBy);
 
-            {CABIN_SLOTS.slice(0, 4).map((slot, idx) => {
-              const assignedEntry = Object.entries(builtCabins).find(([_, val]) => val.slot === slot.id);
-              const assignedBot = assignedEntry ? bots.find((b) => b.id === assignedEntry[0]) : null;
+                return (
+                  <div
+                    key={f.id}
+                    className="flex items-center justify-between p-2 rounded-xl bg-[var(--bg-panel)] text-[10px] font-mono border border-[var(--border-subtle)]"
+                  >
+                    <span className={`truncate max-w-[120px] font-semibold ${isLocked ? 'text-amber-500' : 'text-[var(--text-main)]'}`}>
+                      {f.path}
+                    </span>
 
-              return (
-                <div
-                  key={slot.id}
-                  style={{ left: `${idx % 2 === 0 ? 15 : 35}%`, top: `${idx < 2 ? 25 : 65}%` }}
-                  className={`absolute w-44 h-36 -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-3 flex flex-col justify-between ${
-                    assignedBot
-                      ? 'bg-[var(--bg-card)] border-emerald-500/50 shadow-md'
-                      : 'border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[var(--text-main)]">
-                    <span>{slot.name}</span>
-                    {assignedBot && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
-                  </div>
-                  <div className="text-center py-2">
-                    {assignedBot ? (
-                      <span className="text-xs font-bold text-emerald-500">{assignedBot.name}</span>
+                    {isLocked ? (
+                      <span className="text-amber-500 flex items-center gap-1 font-bold text-[9px]">
+                        <Lock className="w-3 h-3" />
+                        {lockerBot?.name || 'Locked'}
+                      </span>
                     ) : (
-                      <span className="text-[10px] text-[var(--text-faint)]">Empty Lot</span>
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) handleAssignTask(f.id, e.target.value);
+                        }}
+                        className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="">Assign...</option>
+                        {bots.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
                     )}
                   </div>
-                  <div className="text-[9px] text-[var(--text-muted)] font-mono truncate">
-                    {assignedBot ? `File: ${assignedEntry?.[1]?.file.path}` : 'Ready for Bob'}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Campus Summary on Right */}
-            <div className="absolute top-4 right-4 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-1.5">
-              <Coffee className="w-4 h-4 text-amber-500" />
-              <span>STREET 3: RECREATION CAMPUS</span>
+                );
+              })}
             </div>
 
-            {Object.values(LEISURE_ZONES).map((zone, idx) => (
-              <div
-                key={zone.id}
-                style={{
-                  left: `${idx % 2 === 0 ? 65 : 85}%`,
-                  top: `${idx === 0 || idx === 1 ? 25 : idx === 2 || idx === 3 ? 55 : 80}%`,
-                }}
-                className="absolute w-40 h-28 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 flex flex-col justify-between shadow-sm"
-              >
-                <div className="flex items-center gap-2">
-                  {zone.icon}
-                  <span className="text-[11px] font-bold text-[var(--text-main)] font-mono">{zone.name}</span>
-                </div>
-                <div className="text-[9px] text-[var(--text-muted)]">{zone.desc}</div>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      )}
+            <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
+              <span>Station: 🏛️ Central Vault Depot</span>
+              <span className="text-emerald-500 font-bold">AES-256</span>
+            </div>
+          </div>
 
-      {/* Fullscreen Sandbox Modal */}
+          {/* ============================================================ */}
+          {/* RIGHT SIDE: 5 RECREATION & LEISURE ACTIVITY ZONES            */}
+          {/* ============================================================ */}
+          <div className="absolute top-6 right-8 text-xs font-mono font-bold text-[var(--text-muted)] flex items-center gap-2 z-10">
+            <Coffee className="w-4 h-4 text-amber-500" />
+            <span>RECREATION & LEISURE CAMPUS (5 SPOTS)</span>
+          </div>
+
+          {/* Zone 1: Coffee Barista Lounge */}
+          <div
+            style={{ left: `${LEISURE_ZONES.coffee.x}%`, top: `${LEISURE_ZONES.coffee.y}%` }}
+            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+          >
+            <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
+              <div className="flex items-center gap-1.5">
+                {LEISURE_ZONES.coffee.icon}
+                <span>Coffee Lounge</span>
+              </div>
+              <span className="text-[9px] font-mono text-amber-500">Espresso</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-3xl opacity-75">
+              ☕ 🥐
+            </div>
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
+              <span className="truncate">{LEISURE_ZONES.coffee.desc}</span>
+              <span className="text-amber-500 shrink-0 font-bold">☕ Stop</span>
+            </div>
+          </div>
+
+          {/* Zone 2: 8-Bit Arcade Playground */}
+          <div
+            style={{ left: `${LEISURE_ZONES.arcade.x}%`, top: `${LEISURE_ZONES.arcade.y}%` }}
+            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+          >
+            <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
+              <div className="flex items-center gap-1.5">
+                {LEISURE_ZONES.arcade.icon}
+                <span>Arcade Playground</span>
+              </div>
+              <span className="text-[9px] font-mono text-violet-400">8-Bit</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-3xl opacity-75">
+              🕹️ 👾
+            </div>
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
+              <span className="truncate">{LEISURE_ZONES.arcade.desc}</span>
+              <span className="text-violet-400 shrink-0 font-bold">🎮 Stop</span>
+            </div>
+          </div>
+
+          {/* Zone 3: Knowledge Vault & Library */}
+          <div
+            onClick={() => setShowKnowledgeModal(true)}
+            style={{ left: `${LEISURE_ZONES.library.x}%`, top: `${LEISURE_ZONES.library.y}%` }}
+            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border-2 border-emerald-500/40 p-3.5 flex flex-col justify-between shadow-xl cursor-pointer hover:border-emerald-500 transition-colors group z-10"
+          >
+            <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
+              <div className="flex items-center gap-1.5">
+                {LEISURE_ZONES.library.icon}
+                <span>Knowledge Vault</span>
+              </div>
+              <BookOpen className="w-3.5 h-3.5 text-emerald-500 group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="flex-1 flex items-center justify-center text-3xl opacity-75">
+              📚 📖
+            </div>
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
+              <span className="truncate">
+                {activeProject?.knowledgeBase?.length ? `${activeProject.knowledgeBase.length} docs loaded` : 'Click to inspect docs'}
+              </span>
+              <span className="font-bold shrink-0">📚 Terminal</span>
+            </div>
+          </div>
+
+          {/* Zone 4: Chill TV Lounge */}
+          <div
+            style={{ left: `${LEISURE_ZONES.tv.x}%`, top: `${LEISURE_ZONES.tv.y}%` }}
+            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+          >
+            <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
+              <div className="flex items-center gap-1.5">
+                {LEISURE_ZONES.tv.icon}
+                <span>TV & Media Lounge</span>
+              </div>
+              <span className="text-[9px] font-mono text-cyan-400">Stream</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-3xl opacity-75">
+              📺 🛋️
+            </div>
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
+              <span className="truncate">{LEISURE_ZONES.tv.desc}</span>
+              <span className="text-cyan-400 shrink-0 font-bold">📺 Stop</span>
+            </div>
+          </div>
+
+          {/* Zone 5: Water Cooler Chat Hub */}
+          <div
+            style={{ left: `${LEISURE_ZONES.water_cooler.x}%`, top: `${LEISURE_ZONES.water_cooler.y}%` }}
+            className="absolute w-52 h-44 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-3.5 flex flex-col justify-between shadow-lg z-10"
+          >
+            <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
+              <div className="flex items-center gap-1.5">
+                {LEISURE_ZONES.water_cooler.icon}
+                <span>Water Cooler Chat</span>
+              </div>
+              <span className="text-[9px] font-mono text-blue-400">Social</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-3xl opacity-75">
+              💧 💬
+            </div>
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
+              <span className="truncate">{LEISURE_ZONES.water_cooler.desc}</span>
+              <span className="text-blue-400 shrink-0 font-bold">💧 Branch</span>
+            </div>
+          </div>
+
+          {/* ============================================================ */}
+          {/* BOB THE BUILDER (CREATOR BOT) FLYING ANIMATION               */}
+          {/* ============================================================ */}
+          <AnimatePresence>
+            {creatorBotState && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, x: 200, y: 300 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  x: (CABIN_SLOTS[creatorBotState.targetSlot]?.x || 20) * 14.4,
+                  y: (CABIN_SLOTS[creatorBotState.targetSlot]?.y || 30) * 7.4,
+                }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.7 }}
+                className="absolute z-50 flex flex-col items-center pointer-events-none"
+              >
+                <div className="px-3 py-1 bg-amber-500 text-slate-950 font-bold font-mono text-[11px] rounded-full shadow-xl flex items-center gap-1.5 mb-1.5 animate-bounce">
+                  <HardHat className="w-4 h-4" />
+                  <span>🔨 Bob: Constructing Studio for {creatorBotState.targetBotName}!</span>
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-amber-500 border-2 border-white text-white flex items-center justify-center text-2xl shadow-2xl animate-pulse">
+                  👷
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ============================================================ */}
+          {/* REX THE WRECK-IT (DESTROYER BOT) FLYING ANIMATION            */}
+          {/* ============================================================ */}
+          <AnimatePresence>
+            {destroyerBotState && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5, x: 100, y: 150 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  x: (CABIN_SLOTS[destroyerBotState.targetSlot]?.x || 20) * 14.4,
+                  y: (CABIN_SLOTS[destroyerBotState.targetSlot]?.y || 30) * 7.4,
+                }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.7 }}
+                className="absolute z-50 flex flex-col items-center pointer-events-none"
+              >
+                <div className="px-3 py-1 bg-rose-500 text-white font-bold font-mono text-[11px] rounded-full shadow-xl flex items-center gap-1.5 mb-1.5 animate-bounce">
+                  <Bomb className="w-4 h-4" />
+                  <span>💥 Rex: Demolished Studio! Bot is free!</span>
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-rose-600 border-2 border-white text-white flex items-center justify-center text-2xl shadow-2xl animate-pulse">
+                  🚜
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* ============================================================ */}
+          {/* ALL BOTS LIVING & MOVING ON THE CANVAS FLOOR                 */}
+          {/* ============================================================ */}
+          {bots.map((bot, index) => {
+            const pos = getBotPosition(bot, index);
+            const isAssigned = Boolean(builtCabins[bot.id]);
+            const isWorking = bot.status === 'working';
+            const isTroubled = bot.status === 'blocked';
+
+            // Determine appropriate facial emote
+            let emote: BotEmoteType = 'normal';
+            if (isProjectStopped) {
+              emote = 'coffee'; // Relaxed / sleeping
+            } else if (isTroubled) {
+              emote = 'frustrated';
+            } else if (isWorking || isAssigned) {
+              emote = 'lightbulb';
+            } else {
+              const currentAct = botLeisureSpots[bot.id];
+              emote = currentAct ? LEISURE_ZONES[currentAct].emote : 'normal';
+            }
+
+            return (
+              <motion.div
+                key={bot.id}
+                animate={{
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                }}
+                transition={{
+                  type: 'spring',
+                  damping: 24,
+                  stiffness: 70,
+                }}
+                onClick={() => setSelectedBotId(bot.id === selectedBotId ? null : bot.id)}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer group z-30 transition-transform ${
+                  selectedBotId === bot.id ? 'scale-115' : 'hover:scale-110'
+                }`}
+              >
+                {/* Floating Activity Bubble / Bot Name Pill */}
+                <div className="px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold text-[var(--text-main)] shadow-md flex items-center gap-1 mb-1 whitespace-nowrap">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: bot.avatarColor || '#10b981' }}
+                  />
+                  <span>{bot.name}</span>
+                </div>
+
+                {/* Animated Interactive Bot Face with Emotes */}
+                <div className="relative">
+                  <BotFace
+                    shape={bot.avatarShape || 'squircle'}
+                    color={bot.avatarColor || '#10b981'}
+                    status={bot.status}
+                    emote={emote}
+                    size={36}
+                    showEmoteBadge={true}
+                  />
+
+                  {/* Soft floor shadow */}
+                  <div className="w-8 h-2 rounded-full bg-black/25 dark:bg-black/50 blur-[2px] mx-auto mt-0.5" />
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </div>
+
+      {/* Fullscreen Sandbox Live App Modal */}
       {showWallMonitorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl max-w-5xl w-full h-[85vh] p-5 shadow-2xl flex flex-col">

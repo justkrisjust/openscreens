@@ -169,13 +169,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   updateProject: async (id, updates) => {
-    const active = get().activeProject;
-    if (!active || active.id !== id) return;
+    const target = get().projects.find((p) => p.id === id) || (get().activeProject?.id === id ? get().activeProject : null);
+    if (!target) return;
 
-    const updated = { ...active, ...updates, updatedAt: Date.now() };
+    const updated = { ...target, ...updates, updatedAt: Date.now() };
     await saveProject(updated);
     set((state) => ({
-      activeProject: updated,
+      activeProject: state.activeProject?.id === id ? updated : state.activeProject,
       projects: state.projects.map((p) => (p.id === id ? updated : p)),
     }));
   },
