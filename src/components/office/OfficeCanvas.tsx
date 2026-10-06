@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Play,
   Pause,
@@ -25,6 +25,20 @@ export const OfficeCanvas: React.FC = () => {
   const [mobileSection, setMobileSection] = useState<'floor' | 'chat' | 'memory' | 'feed'>('floor');
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const [isT40Open, setIsT40Open] = useState(false);
+
+  // Responsive check to ensure exactly one VirtualOfficeFloor instance is ever mounted
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 1024;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const {
     activeProject,
@@ -251,46 +265,50 @@ export const OfficeCanvas: React.FC = () => {
       </div>
 
       {/* Mobile Content Display based on selected tab */}
-      <div className="block lg:hidden flex-1">
-        {mobileSection === 'floor' && (
+      {!isDesktop && (
+        <div className="flex-1">
+          {mobileSection === 'floor' && (
+            <VirtualOfficeFloor
+              bots={bots}
+              activeLocks={activeLocks}
+              isExecutingTurn={isExecutingTurn}
+            />
+          )}
+          {mobileSection === 'chat' && <DirectorChat />}
+          {mobileSection === 'memory' && <MemoryBox />}
+          {mobileSection === 'feed' && <EventFeed />}
+        </div>
+      )}
+
+      {/* Desktop Panoramic Full View (Large Screens) */}
+      {isDesktop && (
+        <div className="flex flex-col gap-4">
+          {/* Visual Representation: Animated Virtual Office Floor with ALL bots visible */}
           <VirtualOfficeFloor
             bots={bots}
             activeLocks={activeLocks}
             isExecutingTurn={isExecutingTurn}
           />
-        )}
-        {mobileSection === 'chat' && <DirectorChat />}
-        {mobileSection === 'memory' && <MemoryBox />}
-        {mobileSection === 'feed' && <EventFeed />}
-      </div>
 
-      {/* Desktop Panoramic Full View (Large Screens) */}
-      <div className="hidden lg:flex flex-col gap-4">
-        {/* Visual Representation: Animated Virtual Office Floor with ALL bots visible */}
-        <VirtualOfficeFloor
-          bots={bots}
-          activeLocks={activeLocks}
-          isExecutingTurn={isExecutingTurn}
-        />
+          {/* Lower Workspace: Event Feed (Left) - Shared Memory Box (Center) - Director Chat (Right) */}
+          <div className="grid grid-cols-12 gap-4 items-stretch">
+            {/* Left Column: Compact Event Feed */}
+            <div className="col-span-12 xl:col-span-3 lg:col-span-3 h-[500px] flex flex-col">
+              <EventFeed />
+            </div>
 
-        {/* Lower Workspace: Event Feed (Left) - Shared Memory Box (Center) - Director Chat (Right) */}
-        <div className="grid grid-cols-12 gap-4 items-stretch">
-          {/* Left Column: Compact Event Feed */}
-          <div className="col-span-12 xl:col-span-3 lg:col-span-3 h-[500px] flex flex-col">
-            <EventFeed />
-          </div>
+            {/* Center Column: Shared Memory Box (Virtual File Tree + Editor) */}
+            <div className="col-span-12 xl:col-span-6 lg:col-span-6 h-[500px] flex flex-col">
+              <MemoryBox />
+            </div>
 
-          {/* Center Column: Shared Memory Box (Virtual File Tree + Editor) */}
-          <div className="col-span-12 xl:col-span-6 lg:col-span-6 h-[500px] flex flex-col">
-            <MemoryBox />
-          </div>
-
-          {/* Right Column: Director Chat */}
-          <div className="col-span-12 xl:col-span-3 lg:col-span-3 h-[500px] flex flex-col">
-            <DirectorChat />
+            {/* Right Column: Director Chat */}
+            <div className="col-span-12 xl:col-span-3 lg:col-span-3 h-[500px] flex flex-col">
+              <DirectorChat />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Slide-out Director Chat Drawer (Accessible anywhere) */}
       {isChatDrawerOpen && (

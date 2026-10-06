@@ -44,6 +44,20 @@ export type LeisureActivity =
   | 'water_cooler'
   | 'knowledge';
 
+export const ALL_LEISURE_ACTIVITIES: LeisureActivity[] = [
+  'coffee',
+  'arcade',
+  'gpu_spa',
+  'dj_lounge',
+  'tv',
+  'water_cooler',
+  'knowledge',
+];
+
+export const getInitialBotSpot = (index: number): LeisureActivity => {
+  return ALL_LEISURE_ACTIVITIES[index % ALL_LEISURE_ACTIVITIES.length];
+};
+
 interface LeisureZone {
   id: LeisureActivity;
   name: string;
@@ -171,8 +185,43 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   const [canvasScale, setCanvasScale] = useState(1);
   const [canvasPan, setCanvasPan] = useState({ x: 0, y: 0 });
 
-  // Passive ambient wandering spots for untasked bots
-  const [botLeisureSpots, setBotLeisureSpots] = useState<Record<string, LeisureActivity>>({});
+  // Real-time persistent tracking of each bot's current location (spot id or cabin-X)
+  const [botLocations, setBotLocations] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    bots.forEach((bot, index) => {
+      initial[bot.id] = getInitialBotSpot(index);
+    });
+    return initial;
+  });
+
+  // Reference kept in sync for async callbacks and zero-stale lookups
+  const botLocationsRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    botLocationsRef.current = botLocations;
+  }, [botLocations]);
+
+  // Ensure any newly added or loaded bots are tracked immediately
+  useEffect(() => {
+    setBotLocations((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      bots.forEach((bot, index) => {
+        if (!next[bot.id]) {
+          next[bot.id] = getInitialBotSpot(index);
+          changed = true;
+        }
+      });
+      if (changed) {
+        botLocationsRef.current = next;
+        return next;
+      }
+      return prev;
+    });
+  }, [bots]);
+
+  // Track active bots currently in transit so their movements are not interrupted
+  const activeMovingBotsRef = useRef<Set<string>>(new Set());
 
   // Dynamic Office Cabins: botId -> { slot: number, file: VirtualFile }
   const [builtCabins, setBuiltCabins] = useState<Record<string, { slot: number; file: VirtualFile }>>({});
@@ -181,7 +230,6 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   const [botTransitPaths, setBotTransitPaths] = useState<
     Record<string, Array<{ x: number; y: number }>>
   >({});
-  const prevSpotRef = useRef<Record<string, LeisureActivity | string>>({});
 
   // Active Construction State (Two-step flow: Bob builds first -> then Bot travels along line)
   const [activeConstruction, setActiveConstruction] = useState<{
@@ -369,62 +417,64 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
   };
 
   // =========================================================================
-  // INDEPENDENT ASYNCHRONOUS WANDERING PER BOT (12s to 45s STAGGERED INTERVALS)
-  // Bots roam freely across all leisure zones & Knowledge Vault anytime!
+  // INDEPENDENT ASYNCHRONOUS WANDERING PER BOT (10s to 35s STAGGERED INTERVALS)
+  // Continuous real-time movement: A -> B, then B -> C, then C -> A!
   // =========================================================================
   useEffect(() => {
     const timers: Record<string, ReturnType<typeof setTimeout>> = {};
 
     const scheduleNextWander = (botId: string) => {
-      // Randomized timestamp between 12s and 45s per bot
-      const randomDelay = Math.floor(Math.random() * (45000 - 12000)) + 12000;
+      // Randomized resting duration before bot chooses to walk again
+      const randomDelay = Math.floor(Math.random() * (35000 - 10000)) + 10000;
 
       timers[botId] = setTimeout(() => {
         const isAssigned = Boolean(builtCabins[botId]);
         const isBusyWithCrew = activeConstruction?.botId === botId || activeDemolition?.botId === botId;
-        const isMoving = Boolean(botTransitPaths[botId]);
+        const isMoving = activeMovingBotsRef.current.has(botId);
 
         if (!isAssigned && !isBusyWithCrew && !isMoving) {
-          const activities: LeisureActivity[] = [
-            'coffee',
-            'arcade',
-            'gpu_spa',
-            'dj_lounge',
-            'tv',
-            'water_cooler',
-            'knowledge',
-          ];
-          const currentSpot = prevSpotRef.current[botId] || botLeisureSpots[botId] || 'coffee';
-          const candidates = activities.filter((a) => a !== currentSpot);
+          const botIndex = bots.findIndex((b) => b.id === botId);
+          const currentSpot = botLocationsRef.current[botId] || getInitialBotSpot(botIndex >= 0 ? botIndex : 0);
+
+          // Pick next activity from unvisited spots
+          const candidates = ALL_LEISURE_ACTIVITIES.filter((a) => a !== currentSpot);
           const nextActivity = candidates[Math.floor(Math.random() * candidates.length)] || 'coffee';
 
-          const botIndex = bots.findIndex((b) => b.id === botId);
-          const waypoints = computeWaypointsAlongLine(currentSpot, nextActivity, botIndex);
+          // Compute exact waypoints along the light green line from currentSpot to nextActivity
+          const waypoints = computeWaypointsAlongLine(currentSpot, nextActivity, botIndex >= 0 ? botIndex : 0);
 
-          prevSpotRef.current[botId] = nextActivity;
+          // Mark bot as moving in transit so other timers cannot disrupt it
+          activeMovingBotsRef.current.add(botId);
 
           setBotTransitPaths((prev) => ({
             ...prev,
             [botId]: waypoints,
           }));
 
-          setBotLeisureSpots((prev) => ({
-            ...prev,
-            [botId]: nextActivity,
-          }));
-
-          // Remove transit path strictly after full movement finishes (3.2s animation + 200ms buffer)
+          // Remove transit path and lock in arrival spot at exactly 3400ms
           setTimeout(() => {
+            // Arrived at destination! Real-time location is officially updated to nextActivity
+            setBotLocations((prev) => {
+              const updated = { ...prev, [botId]: nextActivity };
+              botLocationsRef.current = updated;
+              return updated;
+            });
+
             setBotTransitPaths((prev) => {
               const next = { ...prev };
               delete next[botId];
               return next;
             });
-          }, 3400);
-        }
 
-        // Schedule subsequent wandering loop
-        scheduleNextWander(botId);
+            activeMovingBotsRef.current.delete(botId);
+
+            // Schedule subsequent wander departing from this newly arrived location!
+            scheduleNextWander(botId);
+          }, (TRANSIT_ANIMATION_SECONDS * 1000) + 200);
+        } else {
+          // If bot was busy or moving, check again after delay
+          scheduleNextWander(botId);
+        }
       }, randomDelay);
     };
 
@@ -499,8 +549,10 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       setActiveConstruction((prev) => (prev ? { ...prev, stage: 'bot_traveling' } : null));
 
       const botIndex = bots.findIndex((b) => b.id === targetBot.id);
-      const currentSpot = prevSpotRef.current[targetBot.id] || botLeisureSpots[targetBot.id] || 'coffee';
-      const waypoints = computeWaypointsAlongLine(currentSpot, `cabin-${openSlot.id}`, botIndex);
+      const currentSpot = botLocationsRef.current[targetBot.id] || getInitialBotSpot(botIndex >= 0 ? botIndex : 0);
+      const waypoints = computeWaypointsAlongLine(currentSpot, `cabin-${openSlot.id}`, botIndex >= 0 ? botIndex : 0);
+
+      activeMovingBotsRef.current.add(targetBot.id);
 
       setBotTransitPaths((prev) => ({
         ...prev,
@@ -512,7 +564,12 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     // Transit duration is 3.2s (3200ms). Step 4 is at 2800ms -> Step 5 fires at 2800 + 3400 = 6200ms!
     setTimeout(async () => {
       await assignFileToBot(fileId, targetBot.id, targetBot.name);
-      prevSpotRef.current[targetBot.id] = `cabin-${openSlot.id}`;
+
+      setBotLocations((prev) => {
+        const updated = { ...prev, [targetBot.id]: `cabin-${openSlot.id}` };
+        botLocationsRef.current = updated;
+        return updated;
+      });
 
       setBotTransitPaths((prev) => {
         const next = { ...prev };
@@ -520,6 +577,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
         return next;
       });
 
+      activeMovingBotsRef.current.delete(targetBot.id);
       setTentativeCabin(null);
       setActiveConstruction(null);
 
@@ -548,8 +606,9 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     const slotIndex = builtCabins[botId]?.slot ?? 0;
     const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
 
-    const destChill: LeisureActivity = 'coffee';
     const botIndex = bots.findIndex((b) => b.id === botId);
+    const chillOptions: LeisureActivity[] = ['coffee', 'arcade', 'gpu_spa', 'dj_lounge', 'tv', 'water_cooler', 'knowledge'];
+    const destChill = chillOptions[Math.floor(Math.random() * chillOptions.length)];
 
     // STEP 1: Bot leaves office FIRST and travels along transit line to chill area
     setActiveDemolition({
@@ -560,8 +619,9 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       stage: 'bot_leaving',
     });
     setVacatingCabinSlot(slotIndex);
+    activeMovingBotsRef.current.add(botId);
 
-    const waypoints = computeWaypointsAlongLine(`cabin-${slotIndex}`, destChill, botIndex);
+    const waypoints = computeWaypointsAlongLine(`cabin-${slotIndex}`, destChill, botIndex >= 0 ? botIndex : 0);
     setBotTransitPaths((prev) => ({
       ...prev,
       [botId]: waypoints,
@@ -569,16 +629,18 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
     // STEP 2: Bot safely arrives at chill spot (after 3400ms); Rex leaves depot directly to cabin
     setTimeout(() => {
-      setBotLeisureSpots((prev) => ({
-        ...prev,
-        [botId]: destChill,
-      }));
-      prevSpotRef.current[botId] = destChill;
+      setBotLocations((prev) => {
+        const updated = { ...prev, [botId]: destChill };
+        botLocationsRef.current = updated;
+        return updated;
+      });
+
       setBotTransitPaths((prev) => {
         const next = { ...prev };
         delete next[botId];
         return next;
       });
+      activeMovingBotsRef.current.delete(botId);
 
       // Now Rex dispatches directly from depot to cabin
       setActiveDemolition((prev) => (prev ? { ...prev, stage: 'rex_traveling' } : null));
@@ -631,16 +693,20 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     }
 
     // Default resting spot in leisure campus or Knowledge Vault
-    const currentActivity = botLeisureSpots[bot.id] || (
-      index % 7 === 0 ? 'coffee' :
-      index % 7 === 1 ? 'arcade' :
-      index % 7 === 2 ? 'gpu_spa' :
-      index % 7 === 3 ? 'dj_lounge' :
-      index % 7 === 4 ? 'knowledge' :
-      index % 7 === 5 ? 'tv' : 'water_cooler'
-    );
+    const currentLoc = botLocations[bot.id] || getInitialBotSpot(index);
+    if (currentLoc.startsWith('cabin-')) {
+      const slotIdx = parseInt(currentLoc.replace('cabin-', ''), 10) || 0;
+      const slot = CABIN_SLOTS[slotIdx] || CABIN_SLOTS[0];
+      return [{ x: slot.x + 2.5, y: slot.y + 1.5 }];
+    }
 
-    const zone = LEISURE_ZONES[currentActivity] || LEISURE_ZONES.coffee;
+    if (currentLoc === 'knowledge') {
+      const offsetX = ((index % 3) - 1) * 3.5;
+      const offsetY = Math.floor(index / 3) * 2.8;
+      return [{ x: 50 + offsetX, y: 82 + offsetY }];
+    }
+
+    const zone = LEISURE_ZONES[currentLoc as LeisureActivity] || LEISURE_ZONES.coffee;
     const offsetX = ((index % 3) - 1) * 3.5;
     const offsetY = Math.floor(index / 3) * 2.8;
 
@@ -769,7 +835,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
             {/* Soft Ambient Underglow */}
             <path
-              d="M 172 198 L 403 198 M 172 455 L 403 455 M 172 705 L 403 705 M 288 198 L 288 705 M 288 310 L 920 310 M 288 455 L 920 455 M 720 455 L 720 705 M 920 198 L 920 705 M 920 198 L 1296 198 M 920 455 L 1296 455 M 920 705 L 1296 705"
+              d="M 172 198 L 403 198 M 172 455 L 403 455 M 172 705 L 403 705 M 288 198 L 288 705 M 288 310 L 920 310 M 288 455 L 920 455 M 720 455 L 720 705 M 288 705 L 920 705 M 920 198 L 920 705 M 920 198 L 1296 198 M 920 455 L 1296 455 M 920 705 L 1296 705"
               stroke="rgba(52, 211, 153, 0.2)"
               strokeWidth="6"
               strokeLinecap="round"
@@ -779,7 +845,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
             {/* Single Clean Light Green Line */}
             <path
-              d="M 172 198 L 403 198 M 172 455 L 403 455 M 172 705 L 403 705 M 288 198 L 288 705 M 288 310 L 920 310 M 288 455 L 920 455 M 720 455 L 720 705 M 920 198 L 920 705 M 920 198 L 1296 198 M 920 455 L 1296 455 M 920 705 L 1296 705"
+              d="M 172 198 L 403 198 M 172 455 L 403 455 M 172 705 L 403 705 M 288 198 L 288 705 M 288 310 L 920 310 M 288 455 L 920 455 M 720 455 L 720 705 M 288 705 L 920 705 M 920 198 L 920 705 M 920 198 L 1296 198 M 920 455 L 1296 455 M 920 705 L 1296 705"
               stroke="#34d399"
               strokeWidth="2.5"
               strokeLinecap="round"
@@ -798,8 +864,10 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             <circle cx="720" cy="455" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
             <circle cx="920" cy="455" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
 
-            {/* Center Bottom Knowledge Vault Junction (SS2 fix) */}
+            {/* Center Bottom Knowledge Vault & Spine Junctions */}
+            <circle cx="288" cy="705" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
             <circle cx="720" cy="705" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="920" cy="705" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
 
             {/* East Campus Recreation Junctions */}
             <circle cx="1036" cy="198" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
@@ -1446,8 +1514,9 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             } else if (isWorking || isAssigned) {
               emote = 'lightbulb';
             } else {
-              const currentAct = botLeisureSpots[bot.id];
-              emote = currentAct ? LEISURE_ZONES[currentAct].emote : 'normal';
+              const currentLoc = botLocations[bot.id] || getInitialBotSpot(index);
+              const isLeisure = currentLoc && LEISURE_ZONES[currentLoc as LeisureActivity];
+              emote = isLeisure ? LEISURE_ZONES[currentLoc as LeisureActivity].emote : 'normal';
             }
 
             return (
@@ -1510,7 +1579,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                   emote={
                     builtCabins[selectedBotForBrief.id]
                       ? 'lightbulb'
-                      : LEISURE_ZONES[botLeisureSpots[selectedBotForBrief.id] || 'coffee'].emote
+                      : LEISURE_ZONES[(botLocations[selectedBotForBrief.id] || 'coffee') as LeisureActivity]?.emote || 'normal'
                   }
                   size={48}
                   showEmoteBadge={true}
@@ -1574,10 +1643,13 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 ) : (
                   <div>
                     <p className="text-[var(--text-main)] mt-1">
-                      Chilling at: <strong className="text-amber-500 font-mono">{LEISURE_ZONES[botLeisureSpots[selectedBotForBrief.id] || 'coffee'].name}</strong>
+                      Chilling at:{' '}
+                      <strong className="text-amber-500 font-mono">
+                        {LEISURE_ZONES[(botLocations[selectedBotForBrief.id] || 'coffee') as LeisureActivity]?.name || 'Recreation Lounge'}
+                      </strong>
                     </p>
                     <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                      {LEISURE_ZONES[botLeisureSpots[selectedBotForBrief.id] || 'coffee'].desc}
+                      {LEISURE_ZONES[(botLocations[selectedBotForBrief.id] || 'coffee') as LeisureActivity]?.desc || 'Resting between tasks'}
                     </p>
 
                     {/* Quick Assign Dropdown */}
