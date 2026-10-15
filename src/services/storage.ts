@@ -92,10 +92,25 @@ export interface KeyRecord {
   updatedAt: number;
 }
 
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  salt: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 interface OpenScreensDB extends DBSchema {
   keys: {
     key: ProviderId;
     value: KeyRecord;
+  };
+  users: {
+    key: string;
+    value: UserAccount;
+    indexes: { 'by-email': string };
   };
   bots: {
     key: string;
@@ -119,7 +134,7 @@ interface OpenScreensDB extends DBSchema {
 }
 
 const DB_NAME = 'openscreens_db_v1';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<OpenScreensDB>> | null = null;
 
@@ -129,6 +144,10 @@ export function getDB(): Promise<IDBPDatabase<OpenScreensDB>> {
       upgrade(db) {
         if (!db.objectStoreNames.contains('keys')) {
           db.createObjectStore('keys', { keyPath: 'provider' });
+        }
+        if (!db.objectStoreNames.contains('users')) {
+          const userStore = db.createObjectStore('users', { keyPath: 'id' });
+          userStore.createIndex('by-email', 'email', { unique: true });
         }
         if (!db.objectStoreNames.contains('bots')) {
           const botStore = db.createObjectStore('bots', { keyPath: 'id' });
@@ -172,6 +191,32 @@ export async function getAllEncryptedKeys(): Promise<KeyRecord[]> {
 export async function deleteEncryptedKey(provider: ProviderId): Promise<void> {
   const db = await getDB();
   await db.delete('keys', provider);
+}
+
+// User Accounts
+export async function saveUserAccount(user: UserAccount): Promise<void> {
+  const db = await getDB();
+  await db.put('users', user);
+}
+
+export async function getUserAccountByEmail(email: string): Promise<UserAccount | undefined> {
+  const db = await getDB();
+  return db.getFromIndex('users', 'by-email', email.toLowerCase().trim());
+}
+
+export async function getUserAccountById(id: string): Promise<UserAccount | undefined> {
+  const db = await getDB();
+  return db.get('users', id);
+}
+
+export async function getAllUserAccounts(): Promise<UserAccount[]> {
+  const db = await getDB();
+  return db.getAll('users');
+}
+
+export async function deleteUserAccount(id: string): Promise<void> {
+  const db = await getDB();
+  await db.delete('users', id);
 }
 
 // Bot Storage

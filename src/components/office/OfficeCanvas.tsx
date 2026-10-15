@@ -19,12 +19,13 @@ import { MemoryBox } from '../memory/MemoryBox';
 import { EventFeed } from './EventFeed';
 import { DirectorChat } from '../chat/DirectorChat';
 import { VirtualOfficeFloor } from './VirtualOfficeFloor';
-import { T40GuideModal } from '../common/T40GuideModal';
+import { UserGuideModal } from '../common/UserGuideModal';
+import { BookOpen } from 'lucide-react';
 
 export const OfficeCanvas: React.FC = () => {
   const [mobileSection, setMobileSection] = useState<'floor' | 'chat' | 'memory' | 'feed'>('floor');
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
-  const [isT40Open, setIsT40Open] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Responsive check to ensure exactly one VirtualOfficeFloor instance is ever mounted
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
@@ -181,14 +182,14 @@ export const OfficeCanvas: React.FC = () => {
           </button>
         )}
 
-            {/* Ask T-40 Guide button */}
+            {/* Documentation & Guide button */}
             <button
-              onClick={() => setIsT40Open(true)}
+              onClick={() => setIsGuideOpen(true)}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all shadow-sm"
-              title="Ask T-40 (Guide & FAQ)"
+              title="Documentation & Production Guide"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Ask T-40</span>
+              <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Docs & Guide</span>
             </button>
 
             {/* Quick Chat Shortcut Button (Opens Drawer on Desktop & Mobile) */}
@@ -336,8 +337,8 @@ export const OfficeCanvas: React.FC = () => {
         </div>
       )}
 
-      {/* T-40 Guide Companion Modal */}
-      <T40GuideModal isOpen={isT40Open} onClose={() => setIsT40Open(false)} />
+      {/* Production User Guide & Documentation Modal */}
+      <UserGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
     </div>
   );
 };

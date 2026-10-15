@@ -1,16 +1,23 @@
 # OpenScreens Current Summary
 
 - **Live Site**: https://justkrisjust.github.io/openscreens/
-- **Architecture**: Bob & Rex Top-Left Crew Cells + Sequential Construction/Demolition Workflows + Real-Time Location-Tracked Transit Network + Zero-Project Standby Mode
-- **Guide Companion**: T-40 (Out of the box)
+- **Architecture**: Minimalist WebCrypto Authentication + Multi-Model AI Colony + Real-Time Location-Tracked Transit Network + Zero-Project Standby Mode
+- **Guide System**: Step-by-Step Interactive Production Documentation & Guide Modal (T-40 bot removed)
 
 ## Recent Completed Changes
-1. **Real-Time Bot Movement Tracking ($A \to B \to C \to A$)**:
-   - Replaced ungrounded fallback state with persistent `botLocations` state + `botLocationsRef` sync, tracking every bot's exact real-time campus spot (`coffee`, `arcade`, `gpu_spa`, `dj_lounge`, `tv`, `water_cooler`, `knowledge`, or `cabin-X`).
-   - Every movement departs from the bot's actual current location and updates upon arrival ($3.4\text{s}$), so consecutive trips cycle smoothly ($A \to B$, then $B \to C$, then $C \to A$) without snapping back to $A$.
-   - Added `activeMovingBotsRef` concurrency protection to prevent wander interruptions during active transit.
-2. **Responsive Single Floor Instance**:
-   - `OfficeCanvas.tsx`: Added `isDesktop` media query state (`>= 1024px`) to mount strictly ONE `<VirtualOfficeFloor>` instance across mobile tabs and desktop views, preventing conflicting duplicate timers.
-3. **Continuous Bottom Transit Line**:
-   - Extended bottom SVG railway with `M 288 705 L 920 705` and junction dots at $(288, 705)$ and $(920, 705)$, seamlessly connecting Cabins through Knowledge Vault to TV/Water Cooler.
-4. **Verification**: 18/18 Vitest tests passing, production build 100% clean, zero security issues.
+1. **World-Class Minimalist Authentication Experience**:
+   - `AuthPage.tsx`: Implemented art-directed authentication experience with 80:20 neutral-to-primary green balance (`#A6F4A5`, `#8DEB8B`, `#246B38`, `#080A08` dark, `#FFFFFF` light).
+   - Generative abstract SVG geometric artwork with flowing organic curves and subtle node constellations on desktop split layout.
+   - Comprehensive flows: Sign In, Sign Up (with real-time 4-segment strength meter & requirements checklist), Privacy-Preserving Forgot Password, 6-digit OTP code verification with countdown resend timer, and Reset Password.
+   - Direct Local Colony Mode (Guest) for instant offline local testing.
+   - Hardware-accelerated client-side WebCrypto PBKDF2 (100,000 rounds) + Salt password hashing and rate-limiting lockout protection.
+2. **Interactive Production Guide Modal**:
+   - Removed T-40 guide bot from demo data; replaced with dedicated step-by-step User Guide & Documentation Modal accessible from header and office controls.
+   - Features searchable step-by-step instructions for the complete 5-step flow, turns explanation, 3-street colony architecture, and local Ollama setup.
+3. **Compatibility Suite Deep Reasoning Test (Max 1,000 Tokens)**:
+   - Added 4th stage to compatibility check evaluating multi-step architectural logic and role coordination.
+   - Strictly capped token budget at 1,000 tokens maximum per bot across all test stages with visual indicator.
+4. **Dynamic Role Fallback & Mid-Sprint Delegation**:
+   - Single-bot projects automatically fulfill all team roles (Leader, Developer, Tester, Reviewer).
+   - Mid-sprint bot additions trigger automatic role handover with audit log event.
+5. **Verification**: 19/19 Vitest tests passing, production build 100% clean, zero security issues.

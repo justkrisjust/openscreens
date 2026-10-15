@@ -26,4 +26,19 @@ describe('WebCrypto AES-GCM & PBKDF2 Security Service', () => {
   it('rejects empty passphrases', async () => {
     await expect(encryptData(sampleKey, '')).rejects.toThrow();
   });
+
+  it('hashes password and verifies successfully with correct password', async () => {
+    const { hashPassword, verifyPassword } = await import('../services/crypto');
+    const pwd = 'CorrectPassword123!';
+    const { hash, salt } = await hashPassword(pwd);
+    expect(hash).toBeTruthy();
+    expect(salt).toBeTruthy();
+    expect(hash).not.toBe(pwd);
+
+    const verified = await verifyPassword(pwd, hash, salt);
+    expect(verified).toBe(true);
+
+    const wrongVerified = await verifyPassword('WrongPassword!', hash, salt);
+    expect(wrongVerified).toBe(false);
+  });
 });

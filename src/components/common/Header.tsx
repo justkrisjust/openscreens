@@ -13,15 +13,18 @@ import {
   Coins,
   Menu,
   X,
+  BookOpen,
+  User,
+  LogOut,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useProjectStore } from '../../stores/useProjectStore';
-import { T40GuideModal } from './T40GuideModal';
+import { UserGuideModal } from './UserGuideModal';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [t40Open, setT40Open] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const {
     activeView,
@@ -32,7 +35,7 @@ export const Header: React.FC = () => {
     showLockedFeature,
   } = useUIStore();
 
-  const { isUnlocked, hasSavedKeys } = useAuthStore();
+  const { isUnlocked, hasSavedKeys, isAuthenticated, currentUser, logout } = useAuthStore();
   const { activeProject, projects, selectProject } = useProjectStore();
 
   return (
@@ -154,14 +157,14 @@ export const Header: React.FC = () => {
 
         {/* Desktop Security & Actions */}
         <div className="hidden md:flex items-center gap-2">
-          {/* Ask T-40 Guide Button */}
+          {/* Documentation & Guide Button */}
           <button
-            onClick={() => setT40Open(true)}
+            onClick={() => setGuideOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all shadow-sm"
-            title="Ask T-40 (Guide & FAQ)"
+            title="Documentation & Production Guide"
           >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Guide (T-40)</span>
+            <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Docs & Guide</span>
           </button>
 
           {/* Key Vault Button */}
@@ -179,6 +182,25 @@ export const Header: React.FC = () => {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             )}
           </button>
+
+          {/* User Profile Pill & Sign Out */}
+          {isAuthenticated && currentUser && (
+            <div className="flex items-center gap-1.5 pl-2 border-l border-[var(--border-subtle)]">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs font-medium text-[var(--text-main)] shadow-sm">
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-[10px]">
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="truncate max-w-[90px]">{currentUser.name}</span>
+              </div>
+              <button
+                onClick={logout}
+                title="Sign out of OpenScreens"
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* Wipe All Data Button */}
           <button
@@ -352,19 +374,42 @@ export const Header: React.FC = () => {
 
           <button
             onClick={() => {
-              setT40Open(true);
+              setGuideOpen(true);
               setMobileMenuOpen(false);
             }}
             className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all"
           >
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Ask T-40 (Guide Companion)</span>
+              <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Docs & Production Guide</span>
             </div>
             <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.2 rounded-full font-mono font-bold">
-              FAQ
+              Guide
             </span>
           </button>
+
+          {isAuthenticated && currentUser && (
+            <div className="flex items-center justify-between px-3 py-2 bg-[var(--bg-panel)] rounded-xl border border-[var(--border-subtle)]">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0">
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="truncate">
+                  <div className="text-xs font-semibold text-[var(--text-main)] truncate">{currentUser.name}</div>
+                  <div className="text-[10px] text-[var(--text-muted)] truncate">{currentUser.email}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+                className="px-2.5 py-1 text-xs text-rose-500 bg-rose-500/10 rounded-lg border border-rose-500/20 font-medium"
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-subtle)] mt-1">
             <button
@@ -399,8 +444,8 @@ export const Header: React.FC = () => {
         </div>
       )}
 
-      {/* Out-of-the-Box T-40 Guide Companion Modal */}
-      <T40GuideModal isOpen={t40Open} onClose={() => setT40Open(false)} />
+      {/* Production User Guide & Documentation Modal */}
+      <UserGuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
     </header>
   );
 };

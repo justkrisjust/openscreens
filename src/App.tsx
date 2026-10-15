@@ -11,6 +11,7 @@ import { KeyVaultModal } from './components/security/KeyVaultModal';
 import { CompatibilityModal } from './components/compatibility/CompatibilityModal';
 import { SandboxedPreviewModal } from './components/preview/SandboxedPreviewModal';
 import { TokensView } from './components/tokens/TokensView';
+import { AuthPage } from './components/auth/AuthPage';
 import { useUIStore } from './stores/useUIStore';
 import { useBotStore } from './stores/useBotStore';
 import { useProjectStore } from './stores/useProjectStore';
@@ -21,17 +22,28 @@ export const App: React.FC = () => {
   const { activeView } = useUIStore();
   const { loadBots } = useBotStore();
   const { loadProjects } = useProjectStore();
-  const { checkSavedKeys } = useAuthStore();
+  const { checkSavedKeys, isAuthenticated, restoreSession } = useAuthStore();
 
   // Activate game loop turn runner
   useProjectRunner();
 
   // Initialize DB and state on first load
   useEffect(() => {
+    restoreSession();
     loadBots();
     loadProjects();
     checkSavedKeys();
-  }, [loadBots, loadProjects, checkSavedKeys]);
+  }, [restoreSession, loadBots, loadProjects, checkSavedKeys]);
+
+  // If not authenticated, render the minimalist, art-directed Auth experience
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen">
+        <AuthPage />
+        <Toast />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-main)] font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-200">

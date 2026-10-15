@@ -29,6 +29,7 @@ export function useProjectRunner() {
   const { getKey, getProxyUrl } = useAuthStore();
 
   const turnTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const previousBotIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
     if (!activeProject || activeProject.status !== 'running' || isExecutingTurn) {
@@ -52,9 +53,52 @@ export function useProjectRunner() {
       return;
     }
 
+    // Detect mid-project newly assigned bots and log dynamic role delegation
+    const currentBotIds = projectBots.map((b) => b.id);
+    if (previousBotIdsRef.current.length > 0 && previousBotIdsRef.current.length < currentBotIds.length) {
+      const addedBots = projectBots.filter((b) => !previousBotIdsRef.current.includes(b.id));
+      const existingBots = projectBots.filter((b) => previousBotIdsRef.current.includes(b.id));
+
+      for (const newBot of addedBots) {
+        const delegator = existingBots[0];
+        if (delegator) {
+          logEvent(
+            delegator.id,
+            delegator.name,
+            'system',
+            `[Role Handover] ${delegator.name} delegated ${newBot.role.toUpperCase()} responsibilities to newly joined teammate ${newBot.name}.`
+          );
+        }
+      }
+    }
+    previousBotIdsRef.current = currentBotIds;
+
     // Pick bot for this turn in round-robin order
     const botIndex = activeProject.currentTurn % projectBots.length;
     const currentBot = projectBots[botIndex];
+
+    // Dynamic role coverage calculation
+    const isSoleBot = projectBots.length === 1;
+    const coveredRoles = new Set(projectBots.map((b) => b.role));
+    const CORE_ROLES = ['leader', 'developer', 'tester', 'reviewer', 'designer'];
+    const unassignedRoles = CORE_ROLES.filter((r) => !coveredRoles.has(r as any));
+
+    let roleInstructions = '';
+    if (isSoleBot) {
+      roleInstructions = `You are the SOLE team member on this project. You must autonomously fulfill ALL roles:
+- Leader: Break down goals into milestones, structure files.
+- Developer: Write functional HTML, JS, CSS files to Memory Box using MEMORY_WRITE.
+- Tester: Validate file contents, test logic, and fix edge cases.
+- Reviewer: Code review and summary generation.`;
+    } else if (botIndex === 0 && unassignedRoles.length > 0) {
+      roleInstructions = `Your primary role is ${currentBot.role}. Since no specialist teammates cover [${unassignedRoles.join(', ')}], you also act as the default fallback fulfilling these roles when needed.`;
+    } else {
+      const teammateSummary = projectBots
+        .filter((b) => b.id !== currentBot.id)
+        .map((b) => `${b.name} (${b.role})`)
+        .join(', ');
+      roleInstructions = `Your role is ${currentBot.role}. Active teammates: ${teammateSummary}. Delegate other tasks and focus on your specialty.`;
+    }
 
     // Check per-bot token cap
     if (currentBot.tokenUsage >= currentBot.tokenCap) {
@@ -92,8 +136,10 @@ export function useProjectRunner() {
           .join(', ');
 
         const systemPrompt = `You are ${currentBot.name}, a bot working on team goal: "${activeProject.goal}".
-Role: ${currentBot.role}.
 Personality: ${currentBot.personality}.
+Role Guidance:
+${roleInstructions}
+
 Rules for token efficiency:
 1. Always output a single status tag: [STATUS: working|thinking|blocked|needs_help|done|waiting].
 2. Keep team chat messages under 2 sentences.

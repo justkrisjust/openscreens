@@ -18,8 +18,9 @@ describe('Compatibility Suite Engine', () => {
 
       // Check individual test steps
       for (const b of report.botReports) {
-        expect(b.steps.length).toBe(3);
+        expect(b.steps.length).toBe(4);
         expect(b.steps.every((s) => s.status === 'pass' || s.status === 'warn')).toBe(true);
+        expect(b.totalTokensUsed).toBeLessThanOrEqual(1000);
       }
 
       // Check handshake

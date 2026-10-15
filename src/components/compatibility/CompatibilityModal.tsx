@@ -102,11 +102,16 @@ export const CompatibilityModal: React.FC = () => {
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-xl font-bold text-[var(--text-main)] tracking-tight">
-            Team Compatibility Suite
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-[var(--text-main)] tracking-tight">
+              Team Compatibility Suite
+            </h2>
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+              Deep Reasoning (Max 1,000 Tokens)
+            </span>
+          </div>
           <p className="text-xs text-[var(--text-muted)] mt-1">
-            Validates role adherence, memory syntax, lock respect, and 2-bot handshakes before launch.
+            Validates role adherence, memory syntax, lock respect, and deep architectural reasoning capped at 1,000 tokens.
           </p>
         </div>
 
@@ -346,8 +351,8 @@ export const CompatibilityModal: React.FC = () => {
                       ({b.provider} • {b.model})
                     </span>
                   </div>
-                  <span className="text-xs font-mono text-[var(--text-faint)]">
-                    {b.totalTokensUsed} tokens tested
+                  <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+                    {b.totalTokensUsed} / 1,000 tokens (Capped)
                   </span>
                 </div>
 

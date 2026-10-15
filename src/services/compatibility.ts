@@ -85,6 +85,15 @@ export async function runFullCompatibilityCheck(
         tokensUsed: 0,
         suggestion: '',
       },
+      {
+        id: 'deep_reasoning',
+        name: 'Deep Reasoning & Task Planning',
+        description: 'Evaluates multi-step logic, architectural planning, and role execution (Capped at 1,000 tokens total)',
+        status: 'pending',
+        isHardFailure: true,
+        tokensUsed: 0,
+        suggestion: '',
+      },
     ];
 
     // Step 1: Role & Format
@@ -213,6 +222,56 @@ export async function runFullCompatibilityCheck(
       steps[2].suggestion = 'Skipped due to prior failure.';
     }
 
+    // Step 4: Deep Reasoning & Task Planning (Strict 1,000 token budget)
+    if (steps[0].status !== 'fail') {
+      steps[3].status = 'running';
+      try {
+        const tokensSoFar = steps.slice(0, 3).reduce((sum, s) => sum + s.tokensUsed, 0);
+        const maxTokensBudget = Math.max(100, Math.min(500, 1000 - tokensSoFar));
+
+        const messages: ChatMessage[] = [
+          {
+            role: 'system',
+            content: `You are ${bot.name}, role "${bot.role}". Personality: "${bot.personality}". Provide concise, rigorous, structured reasoning.`,
+          },
+          {
+            role: 'user',
+            content: `COMPAT_TEST_DEEP_REASONING: You are designing an autonomous multi-bot web feature: "Real-time state synchronization with zero server dependencies and automatic conflict resolution."
+In 3 concise numbered points:
+1. Architectural strategy (e.g. storage event / broadcast channel)
+2. Two critical concurrency edge cases
+3. Your role-specific (${bot.role}) execution plan. Keep under 150 words.`,
+          },
+        ];
+
+        const res = await adapter.sendMessage({
+          model: bot.model,
+          messages,
+          apiKey,
+          customProxyUrl: proxyUrl,
+          maxTokens: maxTokensBudget,
+        });
+
+        steps[3].tokensUsed = res.tokenUsage.totalTokens;
+        steps[3].outputSummary = res.text.slice(0, 140);
+
+        if (res.text.length > 25) {
+          steps[3].status = 'pass';
+          steps[3].suggestion = 'Passed: Model demonstrated sound multi-step reasoning and role alignment.';
+        } else {
+          steps[3].status = 'warn';
+          steps[3].suggestion = 'Warning: Reasoning response was very brief. Recommended for simpler tasks.';
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        steps[3].status = 'warn';
+        steps[3].suggestion = `Warning: Deep reasoning evaluation timed out (${msg.slice(0, 80)}).`;
+      }
+    } else {
+      steps[3].status = 'fail';
+      steps[3].suggestion = 'Skipped due to prior failure.';
+    }
+
     const hasFail = steps.some((s) => s.status === 'fail');
     const hasWarn = steps.some((s) => s.status === 'warn');
     const overallStatus = hasFail ? 'fail' : hasWarn ? 'warn' : 'pass';
@@ -225,7 +284,7 @@ export async function runFullCompatibilityCheck(
       steps,
       overallStatus,
       canStart: !hasFail, // Can start if only warnings
-      totalTokensUsed: steps.reduce((sum, s) => sum + s.tokensUsed, 0),
+      totalTokensUsed: Math.min(1000, steps.reduce((sum, s) => sum + s.tokensUsed, 0)),
     });
   }
 

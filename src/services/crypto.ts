@@ -127,3 +127,59 @@ export async function decryptData(payload: EncryptedPayload, passphrase: string)
     throw new Error('Invalid passphrase or corrupted data. Decryption failed.');
   }
 }
+
+/**
+ * Hashes a user password using PBKDF2 with SHA-256 (100,000 iterations)
+ * Client-side cryptographic security with zero external dependencies.
+ */
+export async function hashPassword(
+  password: string,
+  saltBytes?: Uint8Array
+): Promise<{ hash: string; salt: string }> {
+  if (!password || password.length === 0) {
+    throw new Error('Password cannot be empty.');
+  }
+
+  const salt = saltBytes || window.crypto.getRandomValues(new Uint8Array(16));
+  const enc = new TextEncoder();
+  const keyMaterial = await window.crypto.subtle.importKey(
+    'raw',
+    enc.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  );
+
+  const derivedBits = await window.crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt as BufferSource,
+      iterations: PBKDF2_ITERATIONS,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    KEY_LENGTH_BITS
+  );
+
+  return {
+    hash: bufferToBase64(derivedBits),
+    salt: bufferToBase64(salt),
+  };
+}
+
+/**
+ * Verifies a plaintext password against a stored PBKDF2 hash and salt
+ */
+export async function verifyPassword(
+  password: string,
+  storedHash: string,
+  storedSalt: string
+): Promise<boolean> {
+  try {
+    const saltBytes = base64ToBuffer(storedSalt);
+    const result = await hashPassword(password, saltBytes);
+    return result.hash === storedHash;
+  } catch {
+    return false;
+  }
+}
