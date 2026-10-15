@@ -1,6 +1,6 @@
 # OpenScreens Current Summary
 
-- **Live Site**: https://justkrisjust.github.io/openscreens/
+- **Repository Visibility**: Private (`justkrisjust/openscreens`)
 - **Architecture**: Minimalist WebCrypto Authentication + Multi-Model AI Colony + Real-Time Location-Tracked Transit Network + Zero-Project Standby Mode
 - **Guide System**: Step-by-Step Interactive Production Documentation & Guide Modal (T-40 bot removed)
 
