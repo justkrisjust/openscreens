@@ -57,11 +57,11 @@ export const SandboxedPreviewModal: React.FC = () => {
       {/* Top Preview Controls Bar */}
       <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 mb-4 shadow-sm transition-colors duration-200">
         <div className="flex items-center gap-2">
-          <Play className="w-4 h-4 text-emerald-500 fill-emerald-500" />
+          <Play className="w-4 h-4 text-sky-500 fill-sky-500" />
           <h2 className="text-xs font-semibold text-[var(--text-main)] uppercase tracking-wide font-mono">
             Sandboxed Live Preview
           </h2>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
             Isolated Sandbox (No Host Storage Access)
           </span>
         </div>

@@ -46,7 +46,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-main)] font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-app)] text-[var(--text-main)] font-sans selection:bg-sky-500 selection:text-white transition-colors duration-200">
       {/* Top Navigation & Action Header */}
       <Header />
 

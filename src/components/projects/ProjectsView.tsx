@@ -208,7 +208,7 @@ export const ProjectsView: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
             Projects Workspace
-            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
               {projects.length} Projects
             </span>
           </h2>
@@ -219,7 +219,7 @@ export const ProjectsView: React.FC = () => {
 
         <button
           onClick={() => setIsCreating(!isCreating)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-sky-600/20 transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>New Project</span>
@@ -233,7 +233,7 @@ export const ProjectsView: React.FC = () => {
           className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-6 mb-8 shadow-sm animate-in fade-in duration-200"
         >
           <h3 className="text-sm font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-500" />
+            <Sparkles className="w-4 h-4 text-sky-500" />
             <span>Define New Collaborative Project</span>
           </h3>
 
@@ -247,7 +247,7 @@ export const ProjectsView: React.FC = () => {
                 placeholder="e.g. Minimalist Markdown Notes App, Weather Dashboard..."
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2.5 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2.5 text-[var(--text-main)] focus:outline-none focus:border-sky-500"
                 required
               />
             </div>
@@ -261,7 +261,7 @@ export const ProjectsView: React.FC = () => {
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
                 rows={3}
-                className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 leading-relaxed"
+                className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2 text-[var(--text-main)] focus:outline-none focus:border-sky-500 leading-relaxed"
                 required
               />
             </div>
@@ -280,7 +280,7 @@ export const ProjectsView: React.FC = () => {
                       onClick={() => toggleBotSelection(b.id)}
                       className={`p-3 rounded-xl border text-left flex items-center gap-3 transition-all ${
                         isSelected
-                          ? 'bg-emerald-500/10 border-emerald-500 text-[var(--text-main)]'
+                          ? 'bg-sky-500/10 border-sky-500 text-[var(--text-main)]'
                           : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
                       }`}
                     >
@@ -307,14 +307,14 @@ export const ProjectsView: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-[var(--text-main)] flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                  <BookOpen className="w-3.5 h-3.5 text-sky-500" />
                   <span>Project Knowledge Base & Local Docs</span>
                   <span className="text-[10px] text-[var(--text-muted)] font-mono">
                     (Markdowns, PDFs, Specs, Images)
                   </span>
                 </label>
                 {localFolder && (
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1">
+                  <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono flex items-center gap-1">
                     <Folder className="w-3 h-3" /> Linked: {localFolder}
                   </span>
                 )}
@@ -337,7 +337,7 @@ export const ProjectsView: React.FC = () => {
                   </button>
 
                   <label className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] text-xs font-semibold rounded-lg border border-[var(--border-subtle)] transition-colors cursor-pointer shadow-sm">
-                    <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                    <Upload className="w-3.5 h-3.5 text-sky-500" />
                     <span>Upload Docs (.md, .pdf, images)</span>
                     <input
                       type="file"
@@ -388,7 +388,7 @@ export const ProjectsView: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-600/20"
+                className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-sky-600/20"
               >
                 Create Project
               </button>
@@ -401,7 +401,7 @@ export const ProjectsView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.length === 0 ? (
           <div className="col-span-full py-16 text-center border-2 border-dashed border-[var(--border-subtle)] rounded-3xl bg-[var(--bg-card)]/50 p-8 flex flex-col items-center justify-center">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center mb-4 text-2xl">
+            <div className="w-14 h-14 rounded-2xl bg-sky-500/10 text-sky-500 border border-sky-500/20 flex items-center justify-center mb-4 text-2xl">
               📁
             </div>
             <h3 className="text-base font-semibold text-[var(--text-main)] mb-1">No Projects Found</h3>
@@ -410,7 +410,7 @@ export const ProjectsView: React.FC = () => {
             </p>
             <button
               onClick={() => setIsCreating(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02]"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-sky-600/20 transition-all hover:scale-[1.02]"
             >
               <Plus className="w-4 h-4" /> Create First Project
             </button>
@@ -426,14 +426,14 @@ export const ProjectsView: React.FC = () => {
                 key={proj.id}
                 className={`bg-[var(--bg-card)] border rounded-2xl p-5 transition-all flex flex-col justify-between shadow-sm ${
                   isActive
-                    ? 'border-emerald-500/60 shadow-md shadow-emerald-500/10'
+                    ? 'border-sky-500/60 shadow-md shadow-sky-500/10'
                     : 'border-[var(--border-subtle)] hover:border-[var(--border-strong)]'
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                      <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-500">
                         <FolderGit2 className="w-4 h-4" />
                       </div>
                       <div>
@@ -449,7 +449,7 @@ export const ProjectsView: React.FC = () => {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => openEditModal(proj)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-emerald-500 rounded-lg transition-colors"
+                        className="p-1.5 text-[var(--text-muted)] hover:text-sky-500 rounded-lg transition-colors"
                         title="Edit project settings, bots, and knowledge"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -474,7 +474,7 @@ export const ProjectsView: React.FC = () => {
 
                 {/* Knowledge Base pill if present */}
                 {(kbCount > 0 || proj.localFolderPath) && (
-                  <div className="mb-3 flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                  <div className="mb-3 flex items-center gap-1.5 text-[10px] font-mono text-sky-600 dark:text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-lg">
                     <BookOpen className="w-3 h-3" />
                     <span>
                       {proj.localFolderPath ? `Linked Folder: ${proj.localFolderPath}` : `${kbCount} Knowledge Files`}
@@ -511,14 +511,14 @@ export const ProjectsView: React.FC = () => {
                     await selectProject(proj.id);
                     setActiveView('office');
                   }}
-                  className="px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
                 >
                   <Play className="w-3 h-3 fill-current" />
                   <span>{isActive ? 'View in Office' : 'Open in Office'}</span>
                 </button>
                 {isActive && (
-                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active
+                  <span className="text-[10px] font-mono text-sky-600 dark:text-sky-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400" /> Active
                   </span>
                 )}
               </div>
@@ -533,7 +533,7 @@ export const ProjectsView: React.FC = () => {
           <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-[var(--border-subtle)] mb-5">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500">
+                <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-500">
                   <Edit3 className="w-4 h-4" />
                 </div>
                 <div>
@@ -562,7 +562,7 @@ export const ProjectsView: React.FC = () => {
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-sky-500"
                   required
                 />
               </div>
@@ -575,7 +575,7 @@ export const ProjectsView: React.FC = () => {
                   value={editGoal}
                   onChange={(e) => setEditGoal(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-sky-500 resize-none"
                   required
                 />
               </div>
@@ -590,7 +590,7 @@ export const ProjectsView: React.FC = () => {
                   max={200}
                   value={editMaxTurns}
                   onChange={(e) => setEditMaxTurns(Math.max(1, parseInt(e.target.value) || 15))}
-                  className="w-32 px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                  className="w-32 px-3 py-2 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl text-xs text-[var(--text-main)] focus:outline-none focus:border-sky-500"
                 />
               </div>
 
@@ -608,7 +608,7 @@ export const ProjectsView: React.FC = () => {
                         onClick={() => toggleEditBotSelection(bot.id)}
                         className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-all ${
                           isSelected
-                            ? 'bg-emerald-500/10 border-emerald-500/40 text-[var(--text-main)]'
+                            ? 'bg-sky-500/10 border-sky-500/40 text-[var(--text-main)]'
                             : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
                         }`}
                       >
@@ -631,7 +631,7 @@ export const ProjectsView: React.FC = () => {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => {}} // Handled by div onClick
-                          className="w-4 h-4 text-emerald-600 rounded border-[var(--border-subtle)] focus:ring-emerald-500"
+                          className="w-4 h-4 text-sky-600 rounded border-[var(--border-subtle)] focus:ring-sky-500"
                         />
                       </div>
                     );
@@ -643,7 +643,7 @@ export const ProjectsView: React.FC = () => {
               <div className="pt-2 border-t border-[var(--border-subtle)]">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-mono text-[var(--text-muted)] flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                    <BookOpen className="w-3.5 h-3.5 text-sky-500" />
                     Knowledge Base ({editKnowledgeItems.length} items)
                   </label>
                   <div className="flex items-center gap-1.5">
@@ -714,7 +714,7 @@ export const ProjectsView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-sky-600/20"
                 >
                   Save Changes
                 </button>

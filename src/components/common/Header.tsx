@@ -42,34 +42,61 @@ export const Header: React.FC = () => {
     <header className="border-b border-[var(--border-subtle)] bg-[var(--bg-card)]/90 backdrop-blur-md sticky top-0 z-40 px-4 py-2.5 transition-colors duration-200">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Logo and Brand */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <div
             onClick={() => setActiveView('office')}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 p-0.5 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform flex items-center justify-center">
-              <div className="w-full h-full bg-[var(--bg-card)] rounded-[10px] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-emerald-500 transition-colors" />
+            {/* Reworked Geometric Autonomous Colony Logo Emblem */}
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 via-sky-500 to-cyan-400 p-0.5 shadow-md shadow-sky-500/25 group-hover:scale-105 transition-transform flex items-center justify-center">
+              <div className="w-full h-full bg-[var(--bg-card)] rounded-[10px] flex items-center justify-center p-1">
+                <svg
+                  viewBox="0 0 36 36"
+                  fill="none"
+                  className="w-full h-full text-sky-400 drop-shadow-[0_0_6px_rgba(56,189,248,0.5)]"
+                >
+                  <polygon
+                    points="18,3 32,10.5 32,25.5 18,33 4,25.5 4,10.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    fill="rgba(56, 189, 248, 0.12)"
+                  />
+                  <line x1="18" y1="3" x2="18" y2="18" stroke="#38bdf8" strokeWidth="1.8" />
+                  <line x1="32" y1="25.5" x2="18" y2="18" stroke="#38bdf8" strokeWidth="1.8" />
+                  <line x1="4" y1="25.5" x2="18" y2="18" stroke="#38bdf8" strokeWidth="1.8" />
+                  <circle cx="18" cy="18" r="3" fill="#38bdf8" />
+                  <circle cx="18" cy="3" r="1.8" fill="#7dd3fc" />
+                  <circle cx="32" cy="10.5" r="1.8" fill="#7dd3fc" />
+                  <circle cx="32" cy="25.5" r="1.8" fill="#7dd3fc" />
+                  <circle cx="18" cy="33" r="1.8" fill="#7dd3fc" />
+                  <circle cx="4" cy="25.5" r="1.8" fill="#7dd3fc" />
+                  <circle cx="4" cy="10.5" r="1.8" fill="#7dd3fc" />
+                </svg>
               </div>
             </div>
             <div>
-              <span className="font-bold text-lg tracking-tight text-[var(--text-main)]">
-                OpenScreens
-              </span>
-              <span className="hidden sm:inline-block ml-2 px-1.5 py-0.5 text-[10px] uppercase font-mono font-medium rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                Multi-Model Office
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold text-base sm:text-lg tracking-tight text-[var(--text-main)] font-heading">
+                  OpenScreens
+                </span>
+                <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] uppercase font-mono font-bold rounded-md bg-sky-500/15 text-sky-500 dark:text-sky-400 border border-sky-500/25">
+                  PROD v1.0
+                </span>
+              </div>
+              <div className="text-[9.5px] sm:text-[10px] text-sky-600 dark:text-sky-400 font-mono tracking-wider font-semibold uppercase -mt-0.5">
+                Autonomous Multi-Model AI Colony
+              </div>
             </div>
           </div>
 
           {/* Project selector */}
           {projects.length > 0 && (
-            <div className="hidden md:flex items-center ml-4 pl-4 border-l border-[var(--border-subtle)]">
-              <span className="text-xs text-[var(--text-muted)] mr-2">Project:</span>
+            <div className="hidden lg:flex items-center ml-3 pl-3 border-l border-[var(--border-subtle)] shrink-0">
+              <span className="text-xs text-[var(--text-muted)] mr-1.5">Project:</span>
               <select
                 value={activeProject?.id || ''}
                 onChange={(e) => selectProject(e.target.value)}
-                className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-lg px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-sky-500 max-w-[140px] truncate"
               >
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -82,12 +109,12 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Desktop Navigation Tabs */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1 overflow-x-auto py-1">
           <button
             onClick={() => setActiveView('office')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
               activeView === 'office'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
@@ -95,9 +122,9 @@ export const Header: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveView('bots')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
               activeView === 'bots'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
@@ -105,9 +132,9 @@ export const Header: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveView('projects')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
               activeView === 'projects'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
@@ -115,9 +142,9 @@ export const Header: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveView('tokens')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeView === 'tokens'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
@@ -126,9 +153,9 @@ export const Header: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveView('compatibility')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeView === 'compatibility'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
@@ -136,68 +163,71 @@ export const Header: React.FC = () => {
             <span>Compatibility</span>
           </button>
 
-          {/* Locked "Coming Soon" Tabs */}
+          {/* Locked "Coming Soon" Tabs (visible on 2xl only to save space) */}
           <button
             onClick={() => showLockedFeature('Cloud Deploy')}
-            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-faint)] hover:text-[var(--text-muted)] flex items-center gap-1 cursor-pointer"
+            className="hidden 2xl:flex px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-faint)] hover:text-[var(--text-muted)] items-center gap-1 cursor-pointer"
             title="Deploy (Out of scope - coming soon)"
           >
-            <span className="hidden lg:inline">Deploy</span>
+            <span>Deploy</span>
             <span className="text-[9px] bg-[var(--bg-panel)] text-[var(--text-faint)] border border-[var(--border-subtle)] px-1 py-0.2 rounded font-mono">SOON</span>
           </button>
           <button
             onClick={() => showLockedFeature('Skills & Artifacts Store')}
-            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-faint)] hover:text-[var(--text-muted)] flex items-center gap-1 cursor-pointer"
+            className="hidden 2xl:flex px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--text-faint)] hover:text-[var(--text-muted)] items-center gap-1 cursor-pointer"
             title="Skills & Artifacts Store (Out of scope - coming soon)"
           >
-            <span className="hidden lg:inline">Store</span>
+            <span>Store</span>
             <span className="text-[9px] bg-[var(--bg-panel)] text-[var(--text-faint)] border border-[var(--border-subtle)] px-1 py-0.2 rounded font-mono">SOON</span>
           </button>
         </nav>
 
-        {/* Desktop Security & Actions */}
-        <div className="hidden md:flex items-center gap-2">
+        {/* Desktop Security & Actions - shrink-0 to prevent jammed layout */}
+        <div className="hidden md:flex items-center gap-2 shrink-0">
           {/* Documentation & Guide Button */}
           <button
             onClick={() => setGuideOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all shadow-sm shrink-0"
             title="Documentation & Production Guide"
           >
-            <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Docs & Guide</span>
+            <BookOpen className="w-3.5 h-3.5 text-sky-500" />
+            <span className="hidden lg:inline">Docs & Guide</span>
+            <span className="lg:hidden">Docs</span>
           </button>
 
           {/* Key Vault Button */}
           <button
             onClick={() => setActiveView('keys')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shrink-0 ${
               isUnlocked || hasSavedKeys
-                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30 hover:bg-sky-500/20'
                 : 'bg-[var(--bg-panel)] text-[var(--text-main)] border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]'
             }`}
           >
-            <Key className="w-3.5 h-3.5 text-emerald-500" />
-            <span>API Keys</span>
+            <Key className="w-3.5 h-3.5 text-sky-500" />
+            <span className="hidden lg:inline">API Keys</span>
+            <span className="lg:hidden">Keys</span>
             {hasSavedKeys && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
             )}
           </button>
 
           {/* User Profile Pill & Sign Out */}
           {isAuthenticated && currentUser && (
-            <div className="flex items-center gap-1.5 pl-2 border-l border-[var(--border-subtle)]">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs font-medium text-[var(--text-main)] shadow-sm">
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-[10px]">
+            <div className="flex items-center gap-1.5 pl-1.5 border-l border-[var(--border-subtle)] shrink-0">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs font-medium text-[var(--text-main)] shadow-sm shrink-0">
+                <div className="w-5 h-5 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 font-bold flex items-center justify-center text-[10px] shrink-0">
                   {currentUser.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="truncate max-w-[90px]">{currentUser.name}</span>
+                <span className="truncate max-w-[80px]">{currentUser.name}</span>
               </div>
               <button
                 onClick={logout}
                 title="Sign out of OpenScreens"
-                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 transition-colors shrink-0 cursor-pointer"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-semibold">Logout</span>
               </button>
             </div>
           )}
@@ -206,18 +236,23 @@ export const Header: React.FC = () => {
           <button
             onClick={() => setWipeDataModalOpen(true)}
             title="Wipe all local data and reset app"
-            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-colors"
+            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-colors shrink-0 cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
           </button>
 
-          {/* Theme Toggle */}
+          {/* Permanent Desktop Theme Toggle (Light / Dark) */}
           <button
             onClick={toggleTheme}
-            className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)] border border-[var(--border-subtle)] transition-colors"
+            className="p-2 rounded-xl text-[var(--text-muted)] hover:text-sky-400 bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] hover:border-sky-500/40 transition-all shrink-0 cursor-pointer shadow-sm"
             title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label="Toggle light/dark theme"
           >
-            {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+            {isDarkMode ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-sky-600" />
+            )}
           </button>
         </div>
 
@@ -239,7 +274,7 @@ export const Header: React.FC = () => {
             title="Menu"
           >
             {mobileMenuOpen ? (
-              <X className="w-5 h-5 text-emerald-500" />
+              <X className="w-5 h-5 text-sky-500" />
             ) : (
               <Menu className="w-5 h-5 text-[var(--text-main)]" />
             )}
@@ -278,12 +313,12 @@ export const Header: React.FC = () => {
             }}
             className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
               activeView === 'office'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
             <span>🏢 Office Floor & Workspace</span>
-            {activeView === 'office' && <span className="text-emerald-500 text-[10px]">Active</span>}
+            {activeView === 'office' && <span className="text-sky-500 text-[10px]">Active</span>}
           </button>
 
           <button
@@ -293,12 +328,12 @@ export const Header: React.FC = () => {
             }}
             className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
               activeView === 'bots'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
             <span>🤖 Bots Roster & Customizer</span>
-            {activeView === 'bots' && <span className="text-emerald-500 text-[10px]">Active</span>}
+            {activeView === 'bots' && <span className="text-sky-500 text-[10px]">Active</span>}
           </button>
 
           <button
@@ -308,12 +343,12 @@ export const Header: React.FC = () => {
             }}
             className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
               activeView === 'projects'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
             <span>📁 Projects & Knowledge Base</span>
-            {activeView === 'projects' && <span className="text-emerald-500 text-[10px]">Active</span>}
+            {activeView === 'projects' && <span className="text-sky-500 text-[10px]">Active</span>}
           </button>
 
           <button
@@ -323,7 +358,7 @@ export const Header: React.FC = () => {
             }}
             className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
               activeView === 'tokens'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
@@ -331,7 +366,7 @@ export const Header: React.FC = () => {
               <Coins className="w-3.5 h-3.5 text-amber-500" />
               <span>Tokens & Cost Ledger</span>
             </div>
-            {activeView === 'tokens' && <span className="text-emerald-500 text-[10px]">Active</span>}
+            {activeView === 'tokens' && <span className="text-sky-500 text-[10px]">Active</span>}
           </button>
 
           <button
@@ -341,15 +376,15 @@ export const Header: React.FC = () => {
             }}
             className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
               activeView === 'compatibility'
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                 : 'text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
             }`}
           >
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-sky-500" />
               <span>Compatibility Test Suite</span>
             </div>
-            {activeView === 'compatibility' && <span className="text-emerald-500 text-[10px]">Active</span>}
+            {activeView === 'compatibility' && <span className="text-sky-500 text-[10px]">Active</span>}
           </button>
 
           <button
@@ -359,16 +394,16 @@ export const Header: React.FC = () => {
             }}
             className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
               isUnlocked || hasSavedKeys
-                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                ? 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30'
                 : 'bg-[var(--bg-panel)] text-[var(--text-main)] border-[var(--border-subtle)]'
             }`}
           >
             <div className="flex items-center gap-2">
-              <Key className="w-3.5 h-3.5 text-emerald-500" />
+              <Key className="w-3.5 h-3.5 text-sky-500" />
               <span>API Key Vault (Encrypted)</span>
             </div>
             {hasSavedKeys && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
             )}
           </button>
 
@@ -377,13 +412,13 @@ export const Header: React.FC = () => {
               setGuideOpen(true);
               setMobileMenuOpen(false);
             }}
-            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all"
+            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all"
           >
             <div className="flex items-center gap-2">
-              <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+              <BookOpen className="w-3.5 h-3.5 text-sky-500" />
               <span>Docs & Production Guide</span>
             </div>
-            <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.2 rounded-full font-mono font-bold">
+            <span className="text-[10px] bg-sky-500/20 px-1.5 py-0.2 rounded-full font-mono font-bold">
               Guide
             </span>
           </button>
@@ -391,7 +426,7 @@ export const Header: React.FC = () => {
           {isAuthenticated && currentUser && (
             <div className="flex items-center justify-between px-3 py-2 bg-[var(--bg-panel)] rounded-xl border border-[var(--border-subtle)]">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0">
+                <div className="w-6 h-6 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 font-bold flex items-center justify-center text-xs shrink-0">
                   {currentUser.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="truncate">

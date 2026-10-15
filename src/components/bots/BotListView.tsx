@@ -22,9 +22,10 @@ export const BotListView: React.FC = () => {
   const providerIcons: Record<string, React.ReactNode> = {
     anthropic: <span className="text-amber-500 font-mono text-[10px]">Claude</span>,
     gemini: <span className="text-blue-500 font-mono text-[10px]">Gemini</span>,
-    openai: <span className="text-emerald-500 font-mono text-[10px]">OpenAI</span>,
+    openai: <span className="text-sky-500 font-mono text-[10px]">OpenAI</span>,
     xai: <span className="text-zinc-400 font-mono text-[10px]">xAI</span>,
     mistral: <span className="text-orange-500 font-mono text-[10px]">Mistral</span>,
+    ollama: <span className="text-cyan-400 font-mono text-[10px]">Ollama</span>,
     mock: <span className="text-violet-500 font-mono text-[10px]">Demo</span>,
   };
 
@@ -34,7 +35,7 @@ export const BotListView: React.FC = () => {
         <div>
           <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
             AI Bot Roster
-            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
               {bots.length} Active Bots
             </span>
           </h2>
@@ -48,12 +49,12 @@ export const BotListView: React.FC = () => {
             onClick={() => setActiveView('tokens')}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-xl border border-[var(--border-subtle)] transition-colors"
           >
-            <Coins className="w-3.5 h-3.5 text-emerald-500" />
+            <Coins className="w-3.5 h-3.5 text-sky-500" />
             <span>Token Dashboard</span>
           </button>
           <button
             onClick={openCreateBotModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Bot</span>
@@ -72,12 +73,20 @@ export const BotListView: React.FC = () => {
           <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto mb-4">
             Create your first bot with a custom head shape, model provider, and character to get started.
           </p>
-          <button
-            onClick={openCreateBotModal}
-            className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors shadow-sm"
-          >
-            Create First Bot
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => setActiveView('keys')}
+              className="px-4 py-2 text-xs font-semibold bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] border border-[var(--border-subtle)] rounded-xl transition-colors shadow-sm"
+            >
+              Connect API Key
+            </button>
+            <button
+              onClick={openCreateBotModal}
+              className="px-4 py-2 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-colors shadow-sm"
+            >
+              Create First Bot
+            </button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -125,7 +134,7 @@ export const BotListView: React.FC = () => {
                     <div className="flex items-center gap-0.5">
                       <button
                         onClick={() => openEditBotModal(bot.id)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-emerald-500 rounded-lg hover:bg-[var(--bg-panel)] transition-colors"
+                        className="p-1.5 text-[var(--text-muted)] hover:text-sky-500 rounded-lg hover:bg-[var(--bg-panel)] transition-colors"
                         title="Edit bot avatar, shape, and settings"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -172,7 +181,7 @@ export const BotListView: React.FC = () => {
                           ? 'bg-rose-500'
                           : costInfo.usagePercent > 50
                           ? 'bg-amber-500'
-                          : 'bg-emerald-500'
+                          : 'bg-sky-500'
                       }`}
                       style={{ width: `${costInfo.usagePercent}%` }}
                     />
@@ -180,7 +189,7 @@ export const BotListView: React.FC = () => {
 
                   <div className="mt-2.5 flex items-center justify-between text-[10px]">
                     <span className="text-[var(--text-muted)]">
-                      Cost: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{costInfo.formattedCost}</strong>
+                      Cost: <strong className="text-sky-600 dark:text-sky-400 font-mono">{costInfo.formattedCost}</strong>
                     </span>
                     <span className="text-[var(--text-muted)]">
                       Left: <strong className="text-[var(--text-main)] font-mono">{costInfo.tokensLeft.toLocaleString()}</strong>
@@ -194,7 +203,7 @@ export const BotListView: React.FC = () => {
                     {bot.tokenUsage > 0 && (
                       <button
                         onClick={() => resetTokens(bot.id)}
-                        className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+                        className="text-[10px] text-sky-600 dark:text-sky-400 hover:underline font-medium"
                       >
                         Reset Meter
                       </button>

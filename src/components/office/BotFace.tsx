@@ -31,7 +31,7 @@ export const BotFace: React.FC<BotFaceProps> = ({
   status = 'waiting',
   emote = 'normal',
   shape = 'squircle',
-  color = '#10b981',
+  color = '#0284C7',
   size = 48,
   isWalking = false,
   showEmoteBadge = true,
@@ -50,12 +50,12 @@ export const BotFace: React.FC<BotFaceProps> = ({
 
   // Floating emote icon badge
   const emoteBadges: Record<BotEmoteType, { icon: string; bg: string; anim: string }> = {
-    normal: { icon: '•ᴗ•', bg: 'bg-emerald-500/20 text-emerald-400', anim: '' },
+    normal: { icon: '•ᴗ•', bg: 'bg-sky-500/20 text-sky-400', anim: '' },
     frustrated: { icon: '💢 😤', bg: 'bg-rose-500/20 text-rose-400', anim: 'animate-frustrated' },
     sweat: { icon: '💦 (｡•́︿•̀｡)', bg: 'bg-amber-500/20 text-amber-400', anim: 'animate-bounce' },
-    lightbulb: { icon: '💡 ⚡', bg: 'bg-emerald-500/20 text-emerald-300', anim: 'animate-pulse' },
+    lightbulb: { icon: '💡 ⚡', bg: 'bg-sky-500/20 text-sky-300', anim: 'animate-pulse' },
     coffee: { icon: '☕ ˘ ³˘', bg: 'bg-slate-800 text-slate-300', anim: '' },
-    stars: { icon: '★ ᵔᴥᵔ ★', bg: 'bg-emerald-500/20 text-emerald-300', anim: 'animate-bounce' },
+    stars: { icon: '★ ᵔᴥᵔ ★', bg: 'bg-sky-500/20 text-sky-300', anim: 'animate-bounce' },
     steam: { icon: '♨️ (>_<)', bg: 'bg-rose-500/20 text-rose-400', anim: 'animate-frustrated' },
     question: { icon: '❓ 💭', bg: 'bg-amber-500/20 text-amber-300', anim: 'animate-pulse' },
   };
@@ -253,7 +253,7 @@ export const BotFace: React.FC<BotFaceProps> = ({
               cx="32"
               cy="2.5"
               r="2.5"
-              fill={status === 'working' ? '#10b981' : status === 'blocked' ? '#f43f5e' : color}
+              fill={status === 'working' ? '#0284C7' : status === 'blocked' ? '#f43f5e' : color}
               className={status === 'working' ? 'animate-ping' : ''}
             />
           </g>
@@ -285,7 +285,7 @@ export const BotFace: React.FC<BotFaceProps> = ({
           </g>
         ) : activeEmote === 'stars' ? (
           /* Triumphant star eyes (★ ★) */
-          <g fill="#10b981">
+          <g fill="#0284C7">
             <polygon points="24,24 25,27 28,28 25,30 24,33 22,30 20,28 22,27" />
             <polygon points="40,24 41,27 44,28 41,30 40,33 38,30 36,28 38,27" />
           </g>
@@ -305,8 +305,8 @@ export const BotFace: React.FC<BotFaceProps> = ({
         ) : activeEmote === 'lightbulb' ? (
           /* Focused working eyes with inner spark */
           <g>
-            <circle cx="24" cy="29" r="3.2" fill="#10b981" />
-            <circle cx="40" cy="29" r="3.2" fill="#10b981" />
+            <circle cx="24" cy="29" r="3.2" fill="#0284C7" />
+            <circle cx="40" cy="29" r="3.2" fill="#0284C7" />
             <circle cx="25" cy="28" r="1.2" fill="#ffffff" />
             <circle cx="41" cy="28" r="1.2" fill="#ffffff" />
           </g>
@@ -326,7 +326,7 @@ export const BotFace: React.FC<BotFaceProps> = ({
         ) : activeEmote === 'sweat' ? (
           <path d="M 27 39 Q 32 35 37 39" stroke="#f59e0b" strokeWidth="1.8" fill="none" strokeLinecap="round" />
         ) : activeEmote === 'stars' ? (
-          <path d="M 26 36 Q 32 43 38 36" stroke="#10b981" strokeWidth="1.8" fill="#10b981" fillOpacity="0.25" strokeLinecap="round" />
+          <path d="M 26 36 Q 32 43 38 36" stroke="#0284C7" strokeWidth="1.8" fill="#0284C7" fillOpacity="0.25" strokeLinecap="round" />
         ) : activeEmote === 'coffee' ? (
           <path d="M 28 36 Q 32 39 36 36" stroke="#94a3b8" strokeWidth="1.6" fill="none" strokeLinecap="round" />
         ) : (

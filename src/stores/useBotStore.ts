@@ -5,7 +5,6 @@ import {
   getAllBots,
   saveBot,
 } from '../services/storage';
-import { DEMO_BOTS } from '../services/demoData';
 
 interface BotState {
   bots: Bot[];
@@ -33,18 +32,19 @@ export const useBotStore = create<BotState>((set, get) => ({
   loadBots: async () => {
     try {
       const storedBots = await getAllBots();
-      if (storedBots.length === 0) {
-        // Seed initial demo bots
-        for (const demoBot of DEMO_BOTS) {
-          await saveBot(demoBot);
+      // Filter out any legacy demo bots
+      const realBots = storedBots.filter((b) => !b.id.startsWith('demo-'));
+      if (storedBots.length !== realBots.length) {
+        for (const b of storedBots) {
+          if (b.id.startsWith('demo-')) {
+            await deleteBot(b.id).catch(() => {});
+          }
         }
-        set({ bots: DEMO_BOTS, isLoading: false });
-      } else {
-        set({ bots: storedBots, isLoading: false });
       }
+      set({ bots: realBots, isLoading: false });
     } catch (err) {
-      console.warn('Falling back to in-memory demo bots:', err);
-      set({ bots: DEMO_BOTS, isLoading: false });
+      console.warn('Error loading bots from storage:', err);
+      set({ bots: [], isLoading: false });
     }
   },
 

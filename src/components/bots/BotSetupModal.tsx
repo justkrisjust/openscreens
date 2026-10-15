@@ -16,16 +16,16 @@ import type { BotRole, ProviderId, BotShape } from '../../services/storage';
 import { BotFace, BOT_SHAPES, type BotEmoteType } from '../office/BotFace';
 
 const AVATAR_COLORS = [
-  '#10b981', // Emerald / Light Green
-  '#22c55e', // Green
+  '#38BDF8', // Electric Light Blue
+  '#0284C7', // Deep Cyan Blue
   '#06b6d4', // Cyan
+  '#3b82f6', // Blue
   '#6366f1', // Indigo
   '#8b5cf6', // Purple
   '#ec4899', // Pink
   '#f59e0b', // Amber
   '#ef4444', // Red
   '#14b8a6', // Teal
-  '#3b82f6', // Blue
 ];
 
 const ROLES: { id: BotRole; label: string; desc: string }[] = [
@@ -207,7 +207,7 @@ export const BotSetupModal: React.FC = () => {
               <h3 className="text-base font-semibold text-[var(--text-main)] truncate">
                 {name.trim() || (isEditing ? 'Edit Bot' : 'New Bot')}
               </h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 capitalize">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 capitalize">
                 {role}
               </span>
             </div>
@@ -224,7 +224,7 @@ export const BotSetupModal: React.FC = () => {
                   onClick={() => setTestEmote(em)}
                   className={`px-1.5 py-0.5 text-[10px] rounded-md transition-all ${
                     testEmote === em
-                      ? 'bg-emerald-500 text-white font-bold shadow-sm'
+                      ? 'bg-sky-500 text-white font-bold shadow-sm'
                       : 'bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-subtle)]'
                   }`}
                 >
@@ -237,8 +237,8 @@ export const BotSetupModal: React.FC = () => {
 
         {/* Soft Rule Notice */}
         {!isEditing && isMonoProvider && (
-          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 flex items-start gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+          <div className="mb-4 p-3 bg-sky-500/10 border border-sky-500/30 rounded-xl text-xs text-sky-700 dark:text-sky-300 flex items-start gap-2">
+            <Sparkles className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
             <span>
               <strong>Tip for great results:</strong> Mixing different model providers (e.g. Gemini + Claude + OpenAI) produces richer multi-agent synergy!
             </span>
@@ -256,7 +256,7 @@ export const BotSetupModal: React.FC = () => {
               placeholder="e.g. Larry, Ada, Pixel, Atlas..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2.5 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-emerald-500 font-medium"
+              className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2.5 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-sky-500 font-medium"
               required
             />
           </div>
@@ -265,7 +265,7 @@ export const BotSetupModal: React.FC = () => {
           <div>
             <label className="block text-xs font-medium text-[var(--text-main)] mb-1.5 flex items-center justify-between">
               <span>Avatar Shape & Head Chassis (10 Styles)</span>
-              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono capitalize">
+              <span className="text-[10px] text-sky-600 dark:text-sky-400 font-mono capitalize">
                 Selected: {avatarShape}
               </span>
             </label>
@@ -277,8 +277,8 @@ export const BotSetupModal: React.FC = () => {
                   onClick={() => setAvatarShape(s.id)}
                   className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all ${
                     avatarShape === s.id
-                      ? 'bg-emerald-500/15 border-emerald-500 shadow-sm scale-105'
-                      : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] hover:border-emerald-500/50'
+                      ? 'bg-sky-500/15 border-sky-500 shadow-sm scale-105'
+                      : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] hover:border-sky-500/50'
                   }`}
                   title={s.label}
                 >
@@ -310,7 +310,7 @@ export const BotSetupModal: React.FC = () => {
                   type="button"
                   onClick={() => setAvatarColor(c)}
                   className={`w-7 h-7 rounded-full border-2 transition-transform ${
-                    avatarColor === c ? 'scale-110 border-white shadow-md ring-2 ring-emerald-500' : 'border-transparent opacity-75 hover:opacity-100'
+                    avatarColor === c ? 'scale-110 border-white shadow-md ring-2 ring-sky-500' : 'border-transparent opacity-75 hover:opacity-100'
                   }`}
                   style={{ backgroundColor: c }}
                 />
@@ -331,7 +331,7 @@ export const BotSetupModal: React.FC = () => {
                   onClick={() => setProvider(a.id)}
                   className={`p-2.5 rounded-xl border text-left transition-all ${
                     provider === a.id
-                      ? 'bg-emerald-500/10 border-emerald-500 text-[var(--text-main)] font-semibold'
+                      ? 'bg-sky-500/10 border-sky-500 text-[var(--text-main)] font-semibold'
                       : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
                   }`}
                 >
@@ -367,7 +367,7 @@ export const BotSetupModal: React.FC = () => {
                 Model ({availableModels.length} available)
               </label>
               {isLoadingModels && (
-                <span className="text-[10px] text-emerald-500 flex items-center gap-1 font-mono">
+                <span className="text-[10px] text-sky-500 flex items-center gap-1 font-mono">
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Fetching models...
                 </span>
@@ -382,7 +382,7 @@ export const BotSetupModal: React.FC = () => {
                 placeholder="Filter models (e.g. deepseek, coder, llama, 8b)..."
                 value={modelSearch}
                 onChange={(e) => setModelSearch(e.target.value)}
-                className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl pl-8 pr-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-emerald-500 font-mono"
+                className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl pl-8 pr-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-sky-500 font-mono"
               />
               {modelSearch && (
                 <button
@@ -406,7 +406,7 @@ export const BotSetupModal: React.FC = () => {
                       setModel(modelSearch.trim());
                       setModelSearch('');
                     }}
-                    className="mt-1.5 px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-mono font-medium transition-colors"
+                    className="mt-1.5 px-3 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 rounded-lg text-xs font-mono font-medium transition-colors"
                   >
                     + Use custom model: "{modelSearch.trim()}"
                   </button>
@@ -421,12 +421,12 @@ export const BotSetupModal: React.FC = () => {
                       onClick={() => setModel(m)}
                       className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-mono text-left transition-colors ${
                         isSelected
-                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30'
+                          ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 font-bold border border-sky-500/30'
                           : 'text-[var(--text-main)] hover:bg-[var(--bg-elevated)]'
                       }`}
                     >
                       <span className="truncate">{m}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 ml-1.5" />}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-sky-500 shrink-0 ml-1.5" />}
                     </button>
                   );
                 })
@@ -436,7 +436,7 @@ export const BotSetupModal: React.FC = () => {
             {/* Selected model preview indicator */}
             <div className="mt-1.5 flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono">
               <span>Selected model:</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{model || 'None selected'}</span>
+              <span className="text-sky-600 dark:text-sky-400 font-bold">{model || 'None selected'}</span>
             </div>
           </div>
 
@@ -451,7 +451,7 @@ export const BotSetupModal: React.FC = () => {
                   key={r.id}
                   className={`flex items-start gap-2.5 p-2 rounded-xl border cursor-pointer transition-colors ${
                     role === r.id
-                      ? 'bg-emerald-500/10 border-emerald-500 text-[var(--text-main)] font-semibold'
+                      ? 'bg-sky-500/10 border-sky-500 text-[var(--text-main)] font-semibold'
                       : 'bg-[var(--bg-panel)] border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
                   }`}
                 >
@@ -461,7 +461,7 @@ export const BotSetupModal: React.FC = () => {
                     value={r.id}
                     checked={role === r.id}
                     onChange={() => setRole(r.id)}
-                    className="mt-0.5 text-emerald-600 focus:ring-0 bg-[var(--bg-card)] border-[var(--border-subtle)]"
+                    className="mt-0.5 text-sky-600 focus:ring-0 bg-[var(--bg-card)] border-[var(--border-subtle)]"
                   />
                   <div>
                     <div className="text-xs font-medium text-[var(--text-main)]">{r.label}</div>
@@ -482,7 +482,7 @@ export const BotSetupModal: React.FC = () => {
               value={personality}
               onChange={(e) => setPersonality(e.target.value)}
               rows={2}
-              className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-sky-500"
             />
           </div>
 
@@ -492,7 +492,7 @@ export const BotSetupModal: React.FC = () => {
               <label className="text-xs font-medium text-[var(--text-main)]">
                 Per-Bot Token Allowance / Cap
               </label>
-              <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
+              <span className="text-xs font-mono text-sky-600 dark:text-sky-400 font-semibold">
                 {tokenCap.toLocaleString()} tokens
               </span>
             </div>
@@ -503,7 +503,7 @@ export const BotSetupModal: React.FC = () => {
               step={1000}
               value={tokenCap}
               onChange={(e) => setTokenCap(Number(e.target.value))}
-              className="w-full accent-emerald-500"
+              className="w-full accent-sky-500"
             />
             <div className="flex items-center gap-1.5 mt-1.5">
               {[5000, 15000, 30000, 50000].map((preset) => (
@@ -513,7 +513,7 @@ export const BotSetupModal: React.FC = () => {
                   onClick={() => setTokenCap(preset)}
                   className={`px-2 py-0.5 text-[10px] rounded-lg font-mono transition-colors ${
                     tokenCap === preset
-                      ? 'bg-emerald-500 text-white font-semibold'
+                      ? 'bg-sky-500 text-white font-semibold'
                       : 'bg-[var(--bg-panel)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-subtle)]'
                   }`}
                 >
@@ -533,7 +533,7 @@ export const BotSetupModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
+              className="px-4 py-2 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-xl flex items-center gap-1.5 transition-colors shadow-sm"
             >
               {isEditing ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               {isEditing ? 'Save Changes' : 'Create Bot'}

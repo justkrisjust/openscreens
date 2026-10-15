@@ -34,9 +34,9 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
   > = {
     working: {
       label: 'Working',
-      icon: <Hammer className="w-3.5 h-3.5 animate-bounce text-emerald-500" />,
-      colorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
-      bgClass: 'bg-emerald-500/10',
+      icon: <Hammer className="w-3.5 h-3.5 animate-bounce text-sky-500" />,
+      colorClass: 'text-sky-600 dark:text-sky-400 border-sky-500/30',
+      bgClass: 'bg-sky-500/10',
     },
     thinking: {
       label: 'Thinking',
@@ -46,9 +46,9 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
     },
     done: {
       label: 'Done',
-      icon: <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />,
-      colorClass: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
-      bgClass: 'bg-emerald-500/10',
+      icon: <CheckCircle className="w-3.5 h-3.5 text-sky-500" />,
+      colorClass: 'text-sky-600 dark:text-sky-400 border-sky-500/30',
+      bgClass: 'bg-sky-500/10',
     },
     blocked: {
       label: 'Blocked',
@@ -77,7 +77,7 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
     <div
       className={`bg-[var(--bg-card)] border rounded-2xl p-4 flex flex-col justify-between transition-all duration-300 shadow-sm ${
         isCurrentlyWorking
-          ? 'border-emerald-500/60 shadow-lg shadow-emerald-500/10 animate-working-glow'
+          ? 'border-sky-500/60 shadow-lg shadow-sky-500/10 animate-working-glow'
           : 'border-[var(--border-subtle)]'
       }`}
     >
@@ -180,7 +180,7 @@ export const BotWorkArea: React.FC<BotWorkAreaProps> = ({ bot, side, lastMessage
                 ? 'bg-rose-500'
                 : tokenPercent > 50
                 ? 'bg-amber-500'
-                : 'bg-emerald-500'
+                : 'bg-sky-500'
             }`}
             style={{ width: `${tokenPercent}%` }}
           />

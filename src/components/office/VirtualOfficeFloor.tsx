@@ -133,7 +133,7 @@ export const LEISURE_ZONES: Record<LeisureActivity, LeisureZone> = {
   knowledge: {
     id: 'knowledge',
     name: 'Knowledge Vault Terminal',
-    icon: <BookOpen className="w-4 h-4 text-emerald-500" />,
+    icon: <BookOpen className="w-4 h-4 text-sky-500" />,
     x: 50,
     y: 82,
     desc: 'Reading project specs & documentation',
@@ -174,6 +174,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     unassignFile,
     toggleBotPause,
     pausedBotIds,
+    activeFileNegotiation,
   } = useProjectStore();
   const { showToast, setActiveView } = useUIStore();
 
@@ -288,8 +289,29 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
     setBuiltCabins(nextCabins);
   }, [files]);
 
+  // Current point coordinates for bot on the canvas
+  const getBotCurrentPoint = (botId: string, index: number): { x: number; y: number } => {
+    const path = botTransitPaths[botId];
+    if (path && path.length > 0) {
+      return path[path.length - 1];
+    }
+    const loc = botLocations[botId] || getInitialBotSpot(index);
+    const offsetX = ((index % 3) - 1) * 3.5;
+    const offsetY = Math.floor(index / 3) * 2.8;
+    if (typeof loc === 'string' && loc.startsWith('cabin-')) {
+      const slotIndex = parseInt(loc.replace('cabin-', ''), 10) || 0;
+      const slot = CABIN_SLOTS[slotIndex] || CABIN_SLOTS[0];
+      return { x: slot.x + 2.5, y: slot.y + 1.5 };
+    }
+    if (loc === 'knowledge') {
+      return { x: 50 + offsetX, y: 82 + offsetY };
+    }
+    const zone = LEISURE_ZONES[loc as LeisureActivity] || LEISURE_ZONES.coffee;
+    return { x: zone.x + offsetX, y: zone.y + offsetY };
+  };
+
   // =========================================================================
-  // WAYPOINT ROUTING STRICTLY ALONG THE LIGHT GREEN TRANSIT NETWORK
+  // WAYPOINT ROUTING STRICTLY ALONG THE LIGHT BLUE TRANSIT NETWORK
   // Includes the separate Cabin-to-Chill Express Bypass Line (y = 36%) per SS1
   // =========================================================================
   const computeWaypointsAlongLine = (
@@ -735,7 +757,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
       {/* Top Floor Header & Canvas Toolbar */}
       <div className="px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
         <div className="flex items-center gap-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse" />
           <span className="font-bold text-sm text-[var(--text-main)] font-heading">
             Colony Virtual Office Floor
           </span>
@@ -749,7 +771,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           {activeProject?.knowledgeBase && activeProject.knowledgeBase.length > 0 && (
             <button
               onClick={() => setShowKnowledgeModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-xl transition-colors font-semibold"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 rounded-xl transition-colors font-semibold"
               title="Inspect Project Knowledge Base"
             >
               <BookOpen className="w-3.5 h-3.5" />
@@ -773,7 +795,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 showToast('All bots already have cabins or no files available!', 'info');
               }
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-all shadow-md shadow-emerald-600/20 font-semibold"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-all shadow-md shadow-sky-600/20 font-semibold"
             title="Call Bob to build a cabin for an available bot"
           >
             <Hammer className="w-3.5 h-3.5" />
@@ -820,7 +842,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           className="relative w-[1440px] h-[860px] mx-auto origin-center transition-transform"
         >
           {/* Blueprint Grid Background */}
-          <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.07] bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+          <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.07] bg-[radial-gradient(#0284C7_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
           {/* ============================================================ */}
           {/* COMPLETE LIGHT GREEN TRANSIT NETWORK (WITH EXPRESS BYPASS)   */}
@@ -836,17 +858,17 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             {/* Soft Ambient Underglow */}
             <path
               d="M 172 198 L 403 198 M 172 455 L 403 455 M 172 705 L 403 705 M 288 198 L 288 705 M 288 310 L 920 310 M 288 455 L 920 455 M 720 455 L 720 705 M 288 705 L 920 705 M 920 198 L 920 705 M 920 198 L 1296 198 M 920 455 L 1296 455 M 920 705 L 1296 705"
-              stroke="rgba(52, 211, 153, 0.2)"
+              stroke="rgba(56, 189, 248, 0.25)"
               strokeWidth="6"
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
             />
 
-            {/* Single Clean Light Green Line */}
+            {/* Single Clean Light Blue Line */}
             <path
               d="M 172 198 L 403 198 M 172 455 L 403 455 M 172 705 L 403 705 M 288 198 L 288 705 M 288 310 L 920 310 M 288 455 L 920 455 M 720 455 L 720 705 M 288 705 L 920 705 M 920 198 L 920 705 M 920 198 L 1296 198 M 920 455 L 1296 455 M 920 705 L 1296 705"
-              stroke="#34d399"
+              stroke="#38bdf8"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -855,32 +877,118 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             />
 
             {/* Sleek Junction Waypoint Dots */}
-            {/* Express Cabin-to-Chill Bypass Junctions (SS1 fix) */}
-            <circle cx="288" cy="310" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="920" cy="310" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            {/* Express Cabin-to-Chill Bypass Junctions */}
+            <circle cx="288" cy="310" r="5" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="920" cy="310" r="5" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
 
             {/* Concourse & Central Vault Junctions */}
-            <circle cx="288" cy="455" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="720" cy="455" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="920" cy="455" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="288" cy="455" r="5" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="720" cy="455" r="6" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="920" cy="455" r="5" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
 
             {/* Center Bottom Knowledge Vault & Spine Junctions */}
-            <circle cx="288" cy="705" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="720" cy="705" r="6" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
-            <circle cx="920" cy="705" r="5" fill="#34d399" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="288" cy="705" r="5" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="720" cy="705" r="6" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="920" cy="705" r="5" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
 
             {/* East Campus Recreation Junctions */}
-            <circle cx="1036" cy="198" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1296" cy="198" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1036" cy="455" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1296" cy="455" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1036" cy="705" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
-            <circle cx="1296" cy="705" r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1036" cy="198" r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="198" r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1036" cy="455" r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="455" r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1036" cy="705" r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+            <circle cx="1296" cy="705" r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+
+            {/* Dynamic File Access Negotiation Laser Beam & Travelling Packet */}
+            {activeFileNegotiation && (() => {
+              const reqIndex = bots.findIndex((b) => b.id === activeFileNegotiation.requesterBotId);
+              const holdIndex = bots.findIndex((b) => b.id === activeFileNegotiation.holderBotId);
+              if (reqIndex === -1 || holdIndex === -1) return null;
+              const p1 = getBotCurrentPoint(activeFileNegotiation.requesterBotId, reqIndex);
+              const p2 = getBotCurrentPoint(activeFileNegotiation.holderBotId, holdIndex);
+              const midX = (p1.x + p2.x) / 2;
+              const midY = (p1.y + p2.y) / 2;
+
+              return (
+                <g className="pointer-events-none">
+                  {/* Aura Glow */}
+                  <line
+                    x1={`${p1.x * 14.4}`}
+                    y1={`${p1.y * 8.6}`}
+                    x2={`${p2.x * 14.4}`}
+                    y2={`${p2.y * 8.6}`}
+                    stroke="rgba(56, 189, 248, 0.4)"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                  />
+                  {/* Pulsing Electric Laser Beam */}
+                  <line
+                    x1={`${p1.x * 14.4}`}
+                    y1={`${p1.y * 8.6}`}
+                    x2={`${p2.x * 14.4}`}
+                    y2={`${p2.y * 8.6}`}
+                    stroke="#38bdf8"
+                    strokeWidth="3"
+                    strokeDasharray="6 3"
+                    strokeLinecap="round"
+                    filter="url(#cleanGlow)"
+                    className="animate-pulse"
+                  />
+                  {/* Key Packet Circle */}
+                  <circle
+                    cx={`${midX * 14.4}`}
+                    cy={`${midY * 8.6}`}
+                    r="13"
+                    fill="#0284c7"
+                    stroke="#38bdf8"
+                    strokeWidth="2.5"
+                  />
+                  <text
+                    x={`${midX * 14.4}`}
+                    y={`${midY * 8.6 + 4}`}
+                    textAnchor="middle"
+                    fontSize="11"
+                    fill="#ffffff"
+                    fontFamily="monospace"
+                    fontWeight="bold"
+                  >
+                    {activeFileNegotiation.type === 'request' ? '🔑' : '⚡'}
+                  </text>
+                </g>
+              );
+            })()}
           </svg>
+
+          {/* Dynamic File Access Negotiation Floating Status Bubble */}
+          {activeFileNegotiation && (() => {
+            const reqIndex = bots.findIndex((b) => b.id === activeFileNegotiation.requesterBotId);
+            const holdIndex = bots.findIndex((b) => b.id === activeFileNegotiation.holderBotId);
+            if (reqIndex === -1 || holdIndex === -1) return null;
+            const p1 = getBotCurrentPoint(activeFileNegotiation.requesterBotId, reqIndex);
+            const p2 = getBotCurrentPoint(activeFileNegotiation.holderBotId, holdIndex);
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+
+            return (
+              <div
+                style={{ left: `${midX}%`, top: `${midY - 6}%` }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 z-40 pointer-events-none flex flex-col items-center animate-in zoom-in-95 duration-200"
+              >
+                <div className="px-3 py-1 rounded-full bg-slate-900/95 border-2 border-sky-400 text-sky-300 text-[10.5px] font-mono font-bold shadow-2xl flex items-center gap-1.5 backdrop-blur-md">
+                  <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+                  <span>
+                    {activeFileNegotiation.type === 'request'
+                      ? `🔑 [File Request: ${activeFileNegotiation.filePath}]`
+                      : `⚡ [File Handover: ${activeFileNegotiation.filePath}]`}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Central Colony Concourse Label */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[var(--bg-panel)]/80 backdrop-blur-sm px-4 py-1 rounded-full border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-muted)] z-10 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
             <span className="font-bold text-[var(--text-main)]">Colony Transit Network</span>
             <span>(Cabins ↔ Express Line ↔ Vault ↔ Recreation)</span>
           </div>
@@ -915,7 +1023,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold font-mono text-[var(--text-main)] truncate">Bob's Workshop</span>
-                <span className={`w-2 h-2 rounded-full ${bobStatus !== 'idle' ? 'bg-amber-400 animate-ping' : 'bg-emerald-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${bobStatus !== 'idle' ? 'bg-amber-400 animate-ping' : 'bg-sky-500'}`} />
               </div>
               <div className="text-[9px] font-mono text-[var(--text-muted)] truncate mt-0.5">
                 {bobStatus === 'idle' ? 'Office Builder • Ready' : '🔨 Out on Site'}
@@ -939,7 +1047,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             <div className="flex-1 min-w-0 text-left">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold font-mono text-[var(--text-main)] truncate">Rex's Depot</span>
-                <span className={`w-2 h-2 rounded-full ${rexStatus !== 'idle' ? 'bg-rose-400 animate-ping' : 'bg-emerald-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${rexStatus !== 'idle' ? 'bg-rose-400 animate-ping' : 'bg-sky-500'}`} />
               </div>
               <div className="text-[9px] font-mono text-[var(--text-muted)] truncate mt-0.5">
                 {rexStatus === 'idle' ? 'Demolition Yard • Ready' : '💥 Demolishing'}
@@ -1104,12 +1212,12 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
                 className={`absolute w-52 h-40 -translate-x-1/2 -translate-y-1/2 rounded-2xl border transition-all duration-300 flex flex-col justify-between p-3.5 z-10 ${
                   assignedBot && !isVacating
-                    ? 'bg-[var(--bg-card)] border-emerald-500/60 shadow-lg shadow-emerald-500/10'
+                    ? 'bg-[var(--bg-card)] border-sky-500/60 shadow-lg shadow-sky-500/10'
                     : isBeingBuilt
                     ? 'bg-amber-500/10 border-amber-500/50 shadow-md animate-pulse'
                     : isBeingDemolished
                     ? 'bg-rose-500/10 border-rose-500/50 shadow-md animate-pulse'
-                    : 'border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/30 hover:border-emerald-500/30'
+                    : 'border-dashed border-[var(--border-subtle)] bg-[var(--bg-panel)]/30 hover:border-sky-500/30'
                 }`}
               >
                 {/* Cabin Header */}
@@ -1130,8 +1238,8 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                       Vacating...
                     </span>
                   ) : assignedBot ? (
-                    <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-500 font-bold">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="flex items-center gap-1 text-[9px] font-mono text-sky-500 font-bold">
+                      <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
                       Active
                     </span>
                   ) : (
@@ -1152,15 +1260,15 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                     {/* Developer Info Tag (Duplicate static face removed per user feedback in SS3) */}
                     <div
                       onClick={() => setSelectedBotForBrief(assignedBot)}
-                      className="flex items-center justify-between w-full mt-0.5 px-2 py-1 rounded-lg bg-[var(--bg-card)] border border-[var(--border-subtle)] cursor-pointer hover:border-emerald-500 transition-colors"
+                      className="flex items-center justify-between w-full mt-0.5 px-2 py-1 rounded-lg bg-[var(--bg-card)] border border-[var(--border-subtle)] cursor-pointer hover:border-sky-500 transition-colors"
                       title="Click to view bot dossier"
                     >
                       <div className="flex items-center gap-1.5 truncate">
                         <span
                           className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: assignedBot.avatarColor || '#10b981' }}
+                          style={{ backgroundColor: assignedBot.avatarColor || '#0284C7' }}
                         />
-                        <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 font-mono truncate">
+                        <span className="text-[11px] font-bold text-sky-600 dark:text-sky-400 font-mono truncate">
                           {assignedBot.name}
                         </span>
                       </div>
@@ -1197,7 +1305,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 {/* Cabin Footer Waypoint */}
                 <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
                   <span>Track Station #{slot.id + 1}</span>
-                  {assignedBot && !isVacating && <span className="text-emerald-500 font-semibold">Locked</span>}
+                  {assignedBot && !isVacating && <span className="text-sky-500 font-semibold">Locked</span>}
                 </div>
               </div>
             );
@@ -1210,13 +1318,13 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           <div
             onClick={() => setShowWallMonitorModal(true)}
             style={{ left: '50%', top: '17%' }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 w-80 h-28 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 shadow-xl hover:border-emerald-500 cursor-pointer transition-all group z-20"
+            className="absolute -translate-x-1/2 -translate-y-1/2 w-80 h-28 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-2.5 shadow-xl hover:border-sky-500 cursor-pointer transition-all group z-20"
           >
             <div className="flex items-center justify-between text-[11px] font-mono mb-1 text-[var(--text-muted)]">
               <span className="flex items-center gap-1.5 font-bold text-[var(--text-main)]">
-                <Monitor className="w-3.5 h-3.5 text-emerald-500" /> Live Built App Monitor
+                <Monitor className="w-3.5 h-3.5 text-sky-500" /> Live Built App Monitor
               </span>
-              <Maximize2 className="w-3.5 h-3.5 group-hover:scale-110 text-emerald-500 transition-transform" />
+              <Maximize2 className="w-3.5 h-3.5 group-hover:scale-110 text-sky-500 transition-transform" />
             </div>
             <div className="w-full h-16 bg-slate-950 rounded-xl overflow-hidden border border-[var(--border-subtle)] pointer-events-none shadow-inner">
               <iframe
@@ -1234,7 +1342,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             className={`absolute -translate-x-1/2 -translate-y-1/2 w-80 p-4 rounded-3xl border-2 shadow-2xl transition-all z-20 flex flex-col gap-2.5 ${
               !activeProject
                 ? 'bg-[var(--bg-card)]/95 border-amber-500/60 shadow-amber-500/10'
-                : 'bg-[var(--bg-card)] border-emerald-500/60 shadow-emerald-500/15'
+                : 'bg-[var(--bg-card)] border-sky-500/60 shadow-sky-500/15'
             }`}
           >
             <div className="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
@@ -1242,7 +1350,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 {!activeProject ? (
                   <Lock className="w-4 h-4 text-amber-500" />
                 ) : (
-                  <Folder className="w-4 h-4 text-emerald-500" />
+                  <Folder className="w-4 h-4 text-sky-500" />
                 )}
                 <span>{!activeProject ? 'Vault Sealed (Standby)' : 'Central Memory Vault'}</span>
               </span>
@@ -1250,7 +1358,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold border ${
                   !activeProject
                     ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20'
                 }`}
               >
                 {!activeProject ? '🔒 Closed' : `${files.length} Files`}
@@ -1270,7 +1378,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 </p>
                 <button
                   onClick={() => setActiveView('projects')}
-                  className="mt-3 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10px] font-semibold font-mono shadow-md transition-all hover:scale-105"
+                  className="mt-3 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-[10px] font-semibold font-mono shadow-md transition-all hover:scale-105"
                 >
                   + Create / Select Project
                 </button>
@@ -1301,7 +1409,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                           onChange={(e) => {
                             if (e.target.value) handleAssignTask(f.id, e.target.value);
                           }}
-                          className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                          className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-sky-500"
                         >
                           <option value="">Assign...</option>
                           {bots.map((b) => (
@@ -1319,7 +1427,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
             <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-[var(--text-muted)]">
               <span>Station: 🏛️ Central Vault Depot</span>
-              <span className={!activeProject ? 'text-amber-500 font-bold' : 'text-emerald-500 font-bold'}>
+              <span className={!activeProject ? 'text-amber-500 font-bold' : 'text-sky-500 font-bold'}>
                 {!activeProject ? 'AES-256 Locked' : 'AES-256 Active'}
               </span>
             </div>
@@ -1331,15 +1439,15 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           <div
             onClick={() => setShowKnowledgeModal(true)}
             style={{ left: '50%', top: '82%' }}
-            className="absolute -translate-x-1/2 -translate-y-1/2 w-80 h-36 rounded-3xl bg-[var(--bg-card)] border-2 border-emerald-500/40 p-3.5 flex flex-col justify-between shadow-xl cursor-pointer hover:border-emerald-500 transition-colors group z-20"
+            className="absolute -translate-x-1/2 -translate-y-1/2 w-80 h-36 rounded-3xl bg-[var(--bg-card)] border-2 border-sky-500/40 p-3.5 flex flex-col justify-between shadow-xl cursor-pointer hover:border-sky-500 transition-colors group z-20"
             title="Click to inspect project knowledge base"
           >
             <div className="flex items-center justify-between pb-1 border-b border-[var(--border-subtle)] text-[11px] font-bold font-mono text-[var(--text-main)]">
               <div className="flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-emerald-500" />
+                <BookOpen className="w-4 h-4 text-sky-500" />
                 <span>Knowledge Vault Terminal</span>
               </div>
-              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold border border-sky-500/20">
                 {activeProject?.knowledgeBase?.length || 0} Docs
               </span>
             </div>
@@ -1355,7 +1463,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
               </span>
             </div>
 
-            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
+            <div className="pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[9px] font-mono text-sky-600 dark:text-sky-400">
               <span>Station: 📚 Vault Terminal</span>
               <span className="font-bold">AES-256 Storage</span>
             </div>
@@ -1534,10 +1642,10 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer group z-30 transition-transform hover:scale-115"
               >
                 {/* Floating Activity Bubble / Bot Name Pill */}
-                <div className="px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold text-[var(--text-main)] shadow-md flex items-center gap-1 mb-1 whitespace-nowrap group-hover:border-emerald-500 transition-colors">
+                <div className="px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold text-[var(--text-main)] shadow-md flex items-center gap-1 mb-1 whitespace-nowrap group-hover:border-sky-500 transition-colors">
                   <span
                     className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: bot.avatarColor || '#10b981' }}
+                    style={{ backgroundColor: bot.avatarColor || '#0284C7' }}
                   />
                   <span>{bot.name}</span>
                   {isPaused && <span className="text-[9px] text-amber-500">(Paused)</span>}
@@ -1547,7 +1655,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 <div className="relative">
                   <BotFace
                     shape={bot.avatarShape || 'squircle'}
-                    color={bot.avatarColor || '#10b981'}
+                    color={bot.avatarColor || '#0284C7'}
                     status={bot.status}
                     emote={emote}
                     size={36}
@@ -1574,7 +1682,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
               <div className="flex items-center gap-3">
                 <BotFace
                   shape={selectedBotForBrief.avatarShape || 'squircle'}
-                  color={selectedBotForBrief.avatarColor || '#10b981'}
+                  color={selectedBotForBrief.avatarColor || '#0284C7'}
                   status={selectedBotForBrief.status}
                   emote={
                     builtCabins[selectedBotForBrief.id]
@@ -1589,7 +1697,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                     <h3 className="text-base font-bold text-[var(--text-main)] font-heading">
                       {selectedBotForBrief.name}
                     </h3>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold uppercase">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 font-bold uppercase">
                       {selectedBotForBrief.role}
                     </span>
                   </div>
@@ -1616,7 +1724,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 <div className="text-[11px] font-mono font-bold text-[var(--text-muted)] mb-1 flex items-center justify-between">
                   <span>Current Assignment & Location</span>
                   {builtCabins[selectedBotForBrief.id] ? (
-                    <span className="text-emerald-500 flex items-center gap-1 font-bold">
+                    <span className="text-sky-500 flex items-center gap-1 font-bold">
                       <Lock className="w-3 h-3" /> In Cabin Studio
                     </span>
                   ) : (
@@ -1627,7 +1735,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                 {builtCabins[selectedBotForBrief.id] ? (
                   <div>
                     <p className="text-[var(--text-main)] font-semibold mt-1">
-                      Working on: <code className="text-emerald-500 font-mono">{builtCabins[selectedBotForBrief.id].file.path}</code>
+                      Working on: <code className="text-sky-500 font-mono">{builtCabins[selectedBotForBrief.id].file.path}</code>
                     </p>
                     <p className="text-[11px] text-[var(--text-muted)] mt-0.5 font-mono">
                       Location: {CABIN_SLOTS[builtCabins[selectedBotForBrief.id].slot]?.name}
@@ -1661,7 +1769,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                             if (e.target.value) handleAssignTask(e.target.value, selectedBotForBrief.id);
                           }}
                           defaultValue=""
-                          className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-xs rounded-xl px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+                          className="bg-[var(--bg-card)] border border-[var(--border-subtle)] text-xs rounded-xl px-2.5 py-1 text-[var(--text-main)] focus:outline-none focus:border-sky-500"
                         >
                           <option value="">Choose file for bot...</option>
                           {files.filter((f) => !f.lockedBy).map((f) => (
@@ -1690,7 +1798,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
                 <div className="w-full bg-[var(--bg-card)] rounded-full h-2 overflow-hidden border border-[var(--border-subtle)] mb-2">
                   <div
-                    className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                    className="bg-sky-500 h-full rounded-full transition-all duration-300"
                     style={{
                       width: `${Math.min(100, (selectedBotForBrief.tokenUsage / selectedBotForBrief.tokenCap) * 100)}%`,
                     }}
@@ -1750,7 +1858,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
 
               <button
                 onClick={() => setSelectedBotForBrief(null)}
-                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-emerald-600/20"
+                className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-sky-600/20"
               >
                 Done
               </button>
@@ -1765,7 +1873,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl max-w-5xl w-full h-[85vh] p-5 shadow-2xl flex flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-3">
               <div className="flex items-center gap-2">
-                <Monitor className="w-5 h-5 text-emerald-500" />
+                <Monitor className="w-5 h-5 text-sky-500" />
                 <h3 className="text-sm font-bold text-[var(--text-main)] font-heading">
                   Fullscreen Sandboxed Output Monitor
                 </h3>
@@ -1795,7 +1903,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
           <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl max-w-2xl w-full p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4 border-b border-[var(--border-subtle)] pb-3">
               <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-emerald-500" />
+                <BookOpen className="w-5 h-5 text-sky-500" />
                 <h3 className="text-sm font-bold text-[var(--text-main)] font-heading">
                   Project Knowledge Base & Reference Docs
                 </h3>
@@ -1813,7 +1921,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
             </p>
 
             {activeProject?.localFolderPath && (
-              <div className="mb-4 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+              <div className="mb-4 p-2.5 bg-sky-500/10 border border-sky-500/20 rounded-xl text-xs font-mono text-sky-600 dark:text-sky-400 flex items-center gap-2">
                 <Folder className="w-4 h-4 shrink-0" />
                 <span>Linked PC Directory: <strong>{activeProject.localFolderPath}</strong> (No 100MB limit)</span>
               </div>
@@ -1844,7 +1952,7 @@ export const VirtualOfficeFloor: React.FC<VirtualOfficeFloorProps> = ({
                     setShowKnowledgeModal(false);
                     setActiveView('projects');
                   }}
-                  className="mt-3 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold"
+                  className="mt-3 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold"
                 >
                   Go to Projects to Add Docs
                 </button>

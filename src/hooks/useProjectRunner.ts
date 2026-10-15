@@ -140,20 +140,26 @@ Personality: ${currentBot.personality}.
 Role Guidance:
 ${roleInstructions}
 
-Rules for token efficiency:
-1. Always output a single status tag: [STATUS: working|thinking|blocked|needs_help|done|waiting].
-2. Keep team chat messages under 2 sentences.
-3. If writing a virtual project file, format as:
+STRICT PRODUCTION RULES:
+1. ENGLISH ONLY: You MUST communicate ONLY in natural, fluent English. NEVER use Morse code, binary digits (0s and 1s), hexadecimal strings, or cryptic tokens.
+2. CONCISE SUMMARY (MAX 150 TOKENS): Keep all conversational statements and summaries strictly under 150 tokens. State clearly what you did, what you need, or what you are asking.
+3. CONVERSATIONAL COLLABORATION: When speaking to a teammate, always tag them with @TeammateName (e.g. "@ArchitectBot: I reviewed the files" or "@TesterBot: Ready for testing").
+4. FILE ACCESS NEGOTIATION PROTOCOL:
+   - If a file is locked by a teammate (see Locked files below) and you need to access it, do NOT give up. Ask them in English using format:
+     [FILE_REQUEST: <filePath> -> @<TeammateName>] <Short English message requesting access>
+   - If a teammate requested a file from you and your edits are complete, hand it over in English using format:
+     [FILE_HANDOVER: <filePath> -> @<TeammateName>] <Short English handover message>
+5. STATUS TAG: Always output a single status tag: [STATUS: working|thinking|blocked|needs_help|done|waiting].
+6. MEMORY WRITE FORMAT (if modifying code or creating project files):
 MEMORY_WRITE: <filePath>
 <file content>
-4. If a file is locked, NEVER fight it or poll. Choose another file or task.
-5. On the last line of an edit, always output: SUMMARY: <short 1-sentence explanation of what you changed>.${buildKnowledgeContextPrompt(activeProject.knowledgeBase)}`;
+SUMMARY: <short 1-sentence English explanation of what you changed>${buildKnowledgeContextPrompt(activeProject.knowledgeBase)}`;
 
         const userPrompt = `Turn ${activeProject.currentTurn + 1} of ${activeProject.maxTurns}.
 Memory Box Files:
 ${fileManifest || '(empty project)'}
 Locked files: ${lockedList || 'None'}
-Recent events:
+Recent team dialogue:
 ${recentEvents || 'No recent events'}
 
 What is your next action or message to the team?`;
@@ -168,7 +174,7 @@ What is your next action or message to the team?`;
           messages,
           apiKey,
           customProxyUrl: proxyUrl,
-          maxTokens: 600,
+          maxTokens: 500,
         });
 
         // Track tokens
@@ -179,6 +185,85 @@ What is your next action or message to the team?`;
           response.tokenUsage.completionTokens
         );
         setBotStatus(currentBot.id, response.statusTag);
+
+        // Check for File Access Request: [FILE_REQUEST: filePath -> @Teammate] message
+        const fileReqMatch = response.text.match(/\[FILE_REQUEST:\s*([^\s->]+)\s*->\s*@?([^\]]+)\]\s*([\s\S]*)/i);
+        // Check for File Handover: [FILE_HANDOVER: filePath -> @Teammate] message
+        const fileHandoverMatch = response.text.match(/\[FILE_HANDOVER:\s*([^\s->]+)\s*->\s*@?([^\]]+)\]\s*([\s\S]*)/i);
+
+        if (fileReqMatch) {
+          const reqFilePath = fileReqMatch[1].trim();
+          const targetName = fileReqMatch[2].trim().toLowerCase();
+          const reqMsg = fileReqMatch[3].replace(/\[STATUS:[^\]]+\]/gi, '').trim();
+
+          const targetBot = projectBots.find(
+            (b) => b.name.toLowerCase().includes(targetName) || b.role.toLowerCase() === targetName
+          ) || projectBots.find((b) => b.id !== currentBot.id);
+
+          if (targetBot) {
+            useProjectStore.getState().setActiveFileNegotiation({
+              requesterBotId: currentBot.id,
+              requesterName: currentBot.name,
+              holderBotId: targetBot.id,
+              holderName: targetBot.name,
+              filePath: reqFilePath,
+              type: 'request',
+              timestamp: Date.now(),
+            });
+
+            setTimeout(() => {
+              useProjectStore.getState().setActiveFileNegotiation(null);
+            }, 7500);
+
+            await logEvent(
+              currentBot.id,
+              currentBot.name,
+              'file_request',
+              `@${targetBot.name}: ${reqMsg || `Could you please finish up and release ${reqFilePath}? Need it for next steps.`}`,
+              reqFilePath,
+              response.tokenUsage.totalTokens
+            );
+          }
+        } else if (fileHandoverMatch) {
+          const handoverFilePath = fileHandoverMatch[1].trim();
+          const targetName = fileHandoverMatch[2].trim().toLowerCase();
+          const handoverMsg = fileHandoverMatch[3].replace(/\[STATUS:[^\]]+\]/gi, '').trim();
+
+          const targetBot = projectBots.find(
+            (b) => b.name.toLowerCase().includes(targetName) || b.role.toLowerCase() === targetName
+          ) || projectBots.find((b) => b.id !== currentBot.id);
+
+          if (targetBot) {
+            // Find file and reassign lock to target bot
+            const targetFile = files.find((f) => f.path.toLowerCase() === handoverFilePath.toLowerCase());
+            if (targetFile) {
+              await useProjectStore.getState().assignFileToBot(targetFile.id, targetBot.id, targetBot.name);
+            }
+
+            useProjectStore.getState().setActiveFileNegotiation({
+              requesterBotId: targetBot.id,
+              requesterName: targetBot.name,
+              holderBotId: currentBot.id,
+              holderName: currentBot.name,
+              filePath: handoverFilePath,
+              type: 'handover',
+              timestamp: Date.now(),
+            });
+
+            setTimeout(() => {
+              useProjectStore.getState().setActiveFileNegotiation(null);
+            }, 7500);
+
+            await logEvent(
+              currentBot.id,
+              currentBot.name,
+              'file_handover',
+              `@${targetBot.name}: ${handoverMsg || `Finished updates to ${handoverFilePath}! Handing access over to you.`}`,
+              handoverFilePath,
+              response.tokenUsage.totalTokens
+            );
+          }
+        }
 
         // Check if output includes MEMORY_WRITE
         const writeMatch = response.text.match(/MEMORY_WRITE:\s*([^\n\r]+)[\r\n]+([\s\S]*)/i);
@@ -229,15 +314,17 @@ What is your next action or message to the team?`;
               response.tokenUsage.totalTokens
             );
           }
-        } else {
+        } else if (!fileReqMatch && !fileHandoverMatch) {
           // Normal chat or status message
           const cleanText = response.text.replace(/\[STATUS:[^\]]+\]/gi, '').trim();
           if (cleanText) {
+            // Ensure 150 token constraint cap (~500 chars)
+            const cappedText = cleanText.length > 500 ? cleanText.slice(0, 497) + '...' : cleanText;
             await logEvent(
               currentBot.id,
               currentBot.name,
               'chat_message',
-              cleanText.slice(0, 160),
+              cappedText,
               undefined,
               response.tokenUsage.totalTokens
             );

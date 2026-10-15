@@ -53,7 +53,15 @@ export interface ProjectEvent {
   projectId: string;
   botId: string;
   botName: string;
-  type: 'file_edit' | 'file_read' | 'chat_message' | 'lock_busy' | 'gesture' | 'system';
+  type:
+    | 'file_edit'
+    | 'file_read'
+    | 'chat_message'
+    | 'lock_busy'
+    | 'gesture'
+    | 'system'
+    | 'file_request'
+    | 'file_handover';
   summary: string;
   filePath?: string;
   tokensUsed?: number;

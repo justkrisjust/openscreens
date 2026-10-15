@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { runFullCompatibilityCheck } from '../services/compatibility';
-import { DEMO_BOTS } from '../services/demoData';
+import { TEST_FIXTURE_BOTS } from '../services/demoData';
 
 describe('Compatibility Suite Engine', () => {
   it(
     'runs 4-stage test across demo bots and produces accurate derived metrics',
     async () => {
       const report = await runFullCompatibilityCheck(
-        DEMO_BOTS.slice(0, 2),
+        TEST_FIXTURE_BOTS,
         () => 'mock-token'
       );
 

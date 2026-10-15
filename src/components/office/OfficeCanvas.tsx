@@ -76,7 +76,7 @@ export const OfficeCanvas: React.FC = () => {
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${
                 isRunning
-                  ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/20 animate-pulse'
+                  ? 'bg-sky-500/10 text-sky-500 dark:text-sky-400 border-sky-500/20 animate-pulse'
                   : isCompleted
                   ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
                   : isPaused
@@ -90,12 +90,12 @@ export const OfficeCanvas: React.FC = () => {
             </span>
             {activeProject ? (
               projectBots.some((b) => b.provider !== 'mock') ? (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-sky-500/10 text-sky-500 dark:text-sky-400 border border-sky-500/20 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
                   Live Real AI Mode
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-sky-500/10 text-sky-500 dark:text-sky-400 border border-sky-500/20">
                   Demo Mode (Zero Cost)
                 </span>
               )
@@ -133,7 +133,7 @@ export const OfficeCanvas: React.FC = () => {
             </span>
             <button
               onClick={() => addTurns(10)}
-              className="ml-1 px-1.5 py-0.5 text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-md transition-colors"
+              className="ml-1 px-1.5 py-0.5 text-[10px] bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 rounded-md transition-colors"
               title="Add 10 more turns to milestone limit"
             >
               +10
@@ -154,7 +154,7 @@ export const OfficeCanvas: React.FC = () => {
             ) : (
               <button
                 onClick={startProjectExecution}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/30 transition-all"
+                className="flex items-center gap-1.5 px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-sky-600/30 transition-all"
                 title="Wake up bots and resume project execution"
               >
                 <Play className="w-3.5 h-3.5 fill-white" />
@@ -174,7 +174,7 @@ export const OfficeCanvas: React.FC = () => {
       ) : (
           <button
             onClick={() => setActiveView('projects')}
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-sky-600/30 transition-all hover:scale-[1.02]"
             title="Create or select a project"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -185,10 +185,10 @@ export const OfficeCanvas: React.FC = () => {
             {/* Documentation & Guide button */}
             <button
               onClick={() => setIsGuideOpen(true)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 transition-all shadow-sm"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all shadow-sm"
               title="Documentation & Production Guide"
             >
-              <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+              <BookOpen className="w-3.5 h-3.5 text-sky-500" />
               <span>Docs & Guide</span>
             </button>
 
@@ -200,14 +200,14 @@ export const OfficeCanvas: React.FC = () => {
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
                 isChatDrawerOpen || mobileSection === 'chat'
-                  ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 shadow-sm'
+                  ? 'bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-500/40 shadow-sm'
                   : 'bg-[var(--bg-panel)] text-[var(--text-main)] border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]'
               }`}
               title="Open Director Chat with bots"
             >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
+              <MessageSquare className="w-3.5 h-3.5 text-sky-500" />
               <span>Chat</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 bg-emerald-500/10 text-emerald-500 rounded-full font-bold">
+              <span className="text-[10px] font-mono px-1.5 py-0.2 bg-sky-500/10 text-sky-500 rounded-full font-bold">
                 {events.filter((e) => e.type === 'chat_message').length}
               </span>
             </button>
@@ -220,7 +220,7 @@ export const OfficeCanvas: React.FC = () => {
           onClick={() => setMobileSection('floor')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
             mobileSection === 'floor'
-              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border border-emerald-500/20'
+              ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 font-bold shadow-sm border border-sky-500/20'
               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -231,13 +231,13 @@ export const OfficeCanvas: React.FC = () => {
           onClick={() => setMobileSection('chat')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
             mobileSection === 'chat'
-              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border border-emerald-500/20'
+              ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 font-bold shadow-sm border border-sky-500/20'
               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5" />
           <span>Chat</span>
-          <span className="text-[9px] font-mono px-1 rounded-full bg-emerald-500/10 text-emerald-500">
+          <span className="text-[9px] font-mono px-1 rounded-full bg-sky-500/10 text-sky-500">
             {events.filter((e) => e.type === 'chat_message').length}
           </span>
         </button>
@@ -245,7 +245,7 @@ export const OfficeCanvas: React.FC = () => {
           onClick={() => setMobileSection('memory')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
             mobileSection === 'memory'
-              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border border-emerald-500/20'
+              ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 font-bold shadow-sm border border-sky-500/20'
               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -256,7 +256,7 @@ export const OfficeCanvas: React.FC = () => {
           onClick={() => setMobileSection('feed')}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
             mobileSection === 'feed'
-              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold shadow-sm border border-emerald-500/20'
+              ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 font-bold shadow-sm border border-sky-500/20'
               : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
           }`}
         >
@@ -317,7 +317,7 @@ export const OfficeCanvas: React.FC = () => {
           <div className="w-full max-w-md h-full bg-[var(--bg-card)] border-l border-[var(--border-subtle)] shadow-2xl p-4 flex flex-col animate-in slide-in-from-right duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-3">
               <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-emerald-500" />
+                <MessageSquare className="w-5 h-5 text-sky-500" />
                 <span className="font-bold text-sm text-[var(--text-main)] font-heading">
                   Director Chat Drawer
                 </span>

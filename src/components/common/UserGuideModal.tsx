@@ -38,7 +38,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     id: 'core-workflow',
     title: 'The 5-Step Production Workflow',
     category: 'workflow',
-    icon: <Zap className="w-4 h-4 text-emerald-400" />,
+    icon: <Zap className="w-4 h-4 text-sky-400" />,
     summary: 'From concept to finished software in five autonomous, collaborative steps.',
     steps: [
       {
@@ -84,7 +84,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     id: 'compatibility-test',
     title: 'Compatibility & Deep Reasoning Suite',
     category: 'workflow',
-    icon: <ShieldCheck className="w-4 h-4 text-emerald-400" />,
+    icon: <ShieldCheck className="w-4 h-4 text-sky-400" />,
     summary: 'Rigorous multi-stage pre-flight checks testing models before you burn project tokens.',
     details: [
       '• Stage 1 (Role & Format Following): Verifies the model can output exact [STATUS: working|waiting] tags and speak in its assigned persona.',
@@ -137,7 +137,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     id: 'local-ollama',
     title: 'Connecting Local AI (Ollama / DeepSeek-R1 / LM Studio)',
     category: 'local_ai',
-    icon: <Cpu className="w-4 h-4 text-emerald-400" />,
+    icon: <Cpu className="w-4 h-4 text-sky-400" />,
     summary: 'Run 100% private, local models on your own GPU with zero API charges ($0.00).',
     codeSnippet: '# 1. Allow browser direct connection (CORS)\nset OLLAMA_ORIGINS="*"\nollama serve\n\n# 2. Run your preferred model in another terminal\nollama run deepseek-r1:8b\n# or\nollama run qwen2.5-coder:7b',
     details: [
@@ -151,7 +151,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     id: 'director-chat',
     title: 'Director Chat & Live Steering',
     category: 'workflow',
-    icon: <MessageSquare className="w-4 h-4 text-emerald-400" />,
+    icon: <MessageSquare className="w-4 h-4 text-sky-400" />,
     summary: 'You are the colony director. Steer bots, broadcast instructions, and give instant feedback.',
     details: [
       '• Chat Drawer: Open the Director Chat drawer from the top bar or office screen.',
@@ -188,7 +188,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
         {/* Header */}
         <div className="px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 shadow-sm">
+            <div className="w-9 h-9 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-500 shadow-sm">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
@@ -196,7 +196,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                 <h2 className="font-bold text-base text-[var(--text-main)] font-heading">
                   OpenScreens Production Guide & Documentation
                 </h2>
-                <span className="px-2 py-0.5 text-[10px] uppercase font-mono font-bold rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                <span className="px-2 py-0.5 text-[10px] uppercase font-mono font-bold rounded-full bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
                   Step-by-Step
                 </span>
               </div>
@@ -224,7 +224,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
               placeholder="Search guide (turns, ollama, roles...)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl pl-9 pr-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl pl-9 pr-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-sky-500"
             />
             {searchQuery && (
               <button
@@ -249,7 +249,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                   selectedCategory === cat.id
-                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 shadow-sm'
+                    ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/40 shadow-sm'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-panel)]'
                 }`}
               >
@@ -271,13 +271,13 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                   onClick={() => setActiveSectionId(sec.id)}
                   className={`w-full text-left p-3 rounded-2xl transition-all flex items-start gap-2.5 ${
                     isSelected
-                      ? 'bg-emerald-500/15 text-[var(--text-main)] border border-emerald-500/40 shadow-sm'
+                      ? 'bg-sky-500/15 text-[var(--text-main)] border border-sky-500/40 shadow-sm'
                       : 'hover:bg-[var(--bg-panel)] text-[var(--text-muted)] border border-transparent'
                   }`}
                 >
                   <div className="mt-0.5 shrink-0">{sec.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-xs font-bold leading-tight truncate ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-main)]'}`}>
+                    <div className={`text-xs font-bold leading-tight truncate ${isSelected ? 'text-sky-600 dark:text-sky-400' : 'text-[var(--text-main)]'}`}>
                       {sec.title}
                     </div>
                     <div className="text-[11px] text-[var(--text-muted)] line-clamp-1 mt-0.5">
@@ -293,7 +293,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
           <div className="flex-1 overflow-y-auto p-6 bg-[var(--bg-card)] space-y-6">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase">
+                <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-md bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 uppercase">
                   {activeSection.category}
                 </span>
               </div>
@@ -308,16 +308,16 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             {/* Stepped Workflow If present */}
             {activeSection.steps && (
               <div className="space-y-3">
-                <h4 className="text-xs font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-sky-600 dark:text-sky-400 font-bold">
                   Step-by-Step Instructions:
                 </h4>
                 <div className="space-y-2.5">
                   {activeSection.steps.map((st, i) => (
                     <div
                       key={i}
-                      className="p-3.5 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-2xl flex items-start gap-3 hover:border-emerald-500/30 transition-colors"
+                      className="p-3.5 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-2xl flex items-start gap-3 hover:border-sky-500/30 transition-colors"
                     >
-                      <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-500/20">
+                      <div className="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 font-mono font-bold text-xs flex items-center justify-center shrink-0 border border-sky-500/20">
                         {i + 1}
                       </div>
                       <div>
@@ -338,10 +338,10 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
             {activeSection.codeSnippet && (
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5 text-xs font-mono text-[var(--text-muted)]">
-                  <Terminal className="w-3.5 h-3.5 text-emerald-500" />
+                  <Terminal className="w-3.5 h-3.5 text-sky-500" />
                   <span>Terminal Setup Commands</span>
                 </div>
-                <pre className="p-3.5 bg-black/90 text-emerald-400 font-mono text-xs rounded-2xl overflow-x-auto border border-emerald-500/20 leading-relaxed shadow-inner">
+                <pre className="p-3.5 bg-black/90 text-sky-400 font-mono text-xs rounded-2xl overflow-x-auto border border-sky-500/20 leading-relaxed shadow-inner">
                   {activeSection.codeSnippet}
                 </pre>
               </div>
@@ -358,7 +358,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
                     key={idx}
                     className="p-3 bg-[var(--bg-panel)]/60 rounded-xl border border-[var(--border-subtle)] text-xs text-[var(--text-main)] leading-relaxed flex items-start gap-2"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -374,7 +374,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition-all shadow-sm"
+            className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold transition-all shadow-sm"
           >
             Got It, Back to Office
           </button>

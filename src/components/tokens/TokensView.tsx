@@ -81,9 +81,9 @@ export const TokensView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
-            <Coins className="w-6 h-6 text-emerald-500" />
+            <Coins className="w-6 h-6 text-sky-500" />
             Token & Cost Intelligence
-            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
               Live Tracker
             </span>
           </h2>
@@ -97,7 +97,7 @@ export const TokensView: React.FC = () => {
             onClick={handleExportReport}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[var(--bg-panel)] hover:bg-[var(--bg-elevated)] text-[var(--text-main)] rounded-xl border border-[var(--border-subtle)] transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-500" />
+            <Download className="w-3.5 h-3.5 text-sky-500" />
             <span>Export Report</span>
           </button>
           <button
@@ -120,7 +120,7 @@ export const TokensView: React.FC = () => {
         <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-[var(--text-muted)] text-xs mb-2">
             <span>Total Tokens Spent</span>
-            <Gauge className="w-4 h-4 text-emerald-500" />
+            <Gauge className="w-4 h-4 text-sky-500" />
           </div>
           <div className="text-2xl font-bold font-mono text-[var(--text-main)]">
             {fleetMetrics.totalTokens.toLocaleString()}
@@ -135,9 +135,9 @@ export const TokensView: React.FC = () => {
         <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-[var(--text-muted)] text-xs mb-2">
             <span>Total Estimated Cost</span>
-            <DollarSign className="w-4 h-4 text-emerald-500" />
+            <DollarSign className="w-4 h-4 text-sky-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+          <div className="text-2xl font-bold font-mono text-sky-600 dark:text-sky-400">
             {fleetMetrics.formattedTotalCost}
           </div>
           <div className="text-[10px] text-[var(--text-muted)] mt-1">
@@ -173,8 +173,8 @@ export const TokensView: React.FC = () => {
       </div>
 
       {/* Safety Notice: Zero Overdraft Protection */}
-      <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+      <div className="mb-6 p-4 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-start gap-3">
+        <ShieldCheck className="w-5 h-5 text-sky-500 shrink-0 mt-0.5" />
         <div className="text-xs">
           <h4 className="font-semibold text-[var(--text-main)]">
             Hard Budget Protection Active
@@ -196,7 +196,7 @@ export const TokensView: React.FC = () => {
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500"
+              className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-sky-500"
             >
               <option value="all">All Roles</option>
               <option value="leader">Leader</option>
@@ -253,7 +253,7 @@ export const TokensView: React.FC = () => {
 
                       <button
                         onClick={() => openEditBotModal(bot.id)}
-                        className="p-1.5 text-[var(--text-muted)] hover:text-emerald-500 rounded-lg hover:bg-[var(--bg-panel)] transition-colors"
+                        className="p-1.5 text-[var(--text-muted)] hover:text-sky-500 rounded-lg hover:bg-[var(--bg-panel)] transition-colors"
                         title="Edit bot"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -272,7 +272,7 @@ export const TokensView: React.FC = () => {
                         <span className="text-[10px] text-[var(--text-muted)] block">Tokens Left</span>
                         <span
                           className={`text-xs font-bold font-mono ${
-                            cost.tokensLeft < 1000 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'
+                            cost.tokensLeft < 1000 ? 'text-rose-500' : 'text-sky-600 dark:text-sky-400'
                           }`}
                         >
                           {cost.tokensLeft.toLocaleString()}
@@ -280,7 +280,7 @@ export const TokensView: React.FC = () => {
                       </div>
                       <div>
                         <span className="text-[10px] text-[var(--text-muted)] block">Estimated Cost</span>
-                        <span className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                        <span className="text-xs font-bold font-mono text-sky-600 dark:text-sky-400">
                           {cost.formattedCost}
                         </span>
                       </div>
@@ -305,7 +305,7 @@ export const TokensView: React.FC = () => {
                               ? 'bg-rose-500'
                               : cost.usagePercent > 50
                               ? 'bg-amber-500'
-                              : 'bg-emerald-500'
+                              : 'bg-sky-500'
                           }`}
                           style={{ width: `${cost.usagePercent}%` }}
                         />
@@ -328,7 +328,7 @@ export const TokensView: React.FC = () => {
                           />
                           <button
                             onClick={() => handleSaveCap(bot.id)}
-                            className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors"
+                            className="px-2.5 py-1 text-xs font-semibold bg-sky-600 text-white rounded-lg hover:bg-sky-500 transition-colors"
                           >
                             Save
                           </button>
@@ -347,14 +347,14 @@ export const TokensView: React.FC = () => {
                             setEditingCapBotId(bot.id);
                             setNewCapValue(bot.tokenCap || 15000);
                           }}
-                          className="text-[var(--text-muted)] hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1 transition-colors font-mono"
+                          className="text-[var(--text-muted)] hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-1 transition-colors font-mono"
                         >
                           <Sliders className="w-3 h-3" />
                           <span>Cap: {(bot.tokenCap || 15000).toLocaleString()}</span>
                         </button>
                         <button
                           onClick={() => resetTokens(bot.id)}
-                          className="text-emerald-600 dark:text-emerald-400 hover:underline font-medium text-[10px]"
+                          className="text-sky-600 dark:text-sky-400 hover:underline font-medium text-[10px]"
                         >
                           Reset Meter
                         </button>
@@ -397,7 +397,7 @@ export const TokensView: React.FC = () => {
                     <td className="py-2 px-3 capitalize font-sans text-xs font-medium">
                       {item.provider}
                     </td>
-                    <td className="py-2 px-3 text-emerald-600 dark:text-emerald-400">
+                    <td className="py-2 px-3 text-sky-600 dark:text-sky-400">
                       {item.modelName}
                     </td>
                     <td className="py-2 px-3 text-[var(--text-muted)]">

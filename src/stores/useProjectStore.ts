@@ -16,7 +16,6 @@ import {
   deleteProject,
 } from '../services/storage';
 import { lockManager } from '../services/lockManager';
-import { DEMO_FILES, DEMO_PROJECT } from '../services/demoData';
 
 interface ProjectState {
   projects: Project[];
@@ -27,8 +26,28 @@ interface ProjectState {
   activeLocks: Record<string, { botId: string; botName: string }>;
   pausedBotIds: Set<string>;
   isExecutingTurn: boolean;
+  activeFileNegotiation: {
+    requesterBotId: string;
+    requesterName: string;
+    holderBotId: string;
+    holderName: string;
+    filePath: string;
+    type: 'request' | 'handover';
+    timestamp: number;
+  } | null;
 
   // Actions
+  setActiveFileNegotiation: (
+    negotiation: {
+      requesterBotId: string;
+      requesterName: string;
+      holderBotId: string;
+      holderName: string;
+      filePath: string;
+      type: 'request' | 'handover';
+      timestamp: number;
+    } | null
+  ) => void;
   loadProjects: () => Promise<void>;
   selectProject: (projectId: string) => Promise<void>;
   createProject: (
@@ -90,26 +109,31 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   activeLocks: {},
   pausedBotIds: new Set(),
   isExecutingTurn: false,
+  activeFileNegotiation: null,
+
+  setActiveFileNegotiation: (activeFileNegotiation) => set({ activeFileNegotiation }),
 
   loadProjects: async () => {
     try {
-      let storedProjects = await getAllProjects();
-      if (storedProjects.length === 0) {
-        // Seed initial demo project and files
-        await saveProject(DEMO_PROJECT);
-        for (const file of DEMO_FILES) {
-          await saveVirtualFile(file);
+      const storedProjects = await getAllProjects();
+      const realProjects = storedProjects.filter((p) => !p.id.startsWith('demo-'));
+      if (storedProjects.length !== realProjects.length) {
+        for (const p of storedProjects) {
+          if (p.id.startsWith('demo-')) {
+            await deleteProject(p.id).catch(() => {});
+          }
         }
-        storedProjects = [DEMO_PROJECT];
       }
 
-      set({ projects: storedProjects });
-      if (!get().activeProject && storedProjects.length > 0) {
-        await get().selectProject(storedProjects[0].id);
+      set({ projects: realProjects });
+      if (!get().activeProject && realProjects.length > 0) {
+        await get().selectProject(realProjects[0].id);
+      } else if (realProjects.length === 0) {
+        set({ activeProject: null, files: [], events: [], selectedFileId: null });
       }
     } catch (err) {
-      console.warn('Project load fallback:', err);
-      set({ projects: [DEMO_PROJECT], activeProject: DEMO_PROJECT, files: DEMO_FILES });
+      console.warn('Error loading projects from storage:', err);
+      set({ projects: [], activeProject: null, files: [], events: [] });
     }
   },
 

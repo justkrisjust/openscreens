@@ -69,9 +69,9 @@ function evaluatePassword(pwd: string): PasswordScore {
     return { score: 2, label: 'Fair', color: '#f59e0b', hasLength, hasUpper, hasLower, hasNumber, hasSpecial };
   }
   if (raw === 3) {
-    return { score: 3, label: 'Strong', color: '#10b981', hasLength, hasUpper, hasLower, hasNumber, hasSpecial };
+    return { score: 3, label: 'Strong', color: '#0284C7', hasLength, hasUpper, hasLower, hasNumber, hasSpecial };
   }
-  return { score: 4, label: 'Very Strong', color: '#A6F4A5', hasLength, hasUpper, hasLower, hasNumber, hasSpecial };
+  return { score: 4, label: 'Very Strong', color: '#38BDF8', hasLength, hasUpper, hasLower, hasNumber, hasSpecial };
 }
 
 export const AuthPage: React.FC = () => {
@@ -279,47 +279,75 @@ export const AuthPage: React.FC = () => {
   return (
     <div
       className={`min-h-screen flex flex-col transition-colors duration-300 font-sans ${
-        isDarkMode ? 'bg-[#080A08] text-[#F5F7F4]' : 'bg-[#FFFFFF] text-[#151815]'
+        isDarkMode ? 'bg-[#080E18] text-[#F5F7F4]' : 'bg-[#FFFFFF] text-[#151815]'
       }`}
       style={{
         // Strict design system tokens
-        ['--auth-primary-green' as string]: '#A6F4A5',
-        ['--auth-hover-green' as string]: '#8DEB8B',
-        ['--auth-deep-green' as string]: '#246B38',
-        ['--auth-subtle-surface' as string]: isDarkMode ? '#101310' : '#F7F9F6',
-        ['--auth-elevated' as string]: isDarkMode ? '#171B17' : '#FFFFFF',
-        ['--auth-border' as string]: isDarkMode ? '#272D27' : '#E6EAE4',
-        ['--auth-text-muted' as string]: isDarkMode ? '#A0A7A0' : '#626962',
+        ['--auth-primary-green' as string]: '#38BDF8',
+        ['--auth-hover-green' as string]: '#7DD3FC',
+        ['--auth-deep-green' as string]: '#0284C7',
+        ['--auth-subtle-surface' as string]: isDarkMode ? '#0F172A' : '#F7F9F6',
+        ['--auth-elevated' as string]: isDarkMode ? '#1E293B' : '#FFFFFF',
+        ['--auth-border' as string]: isDarkMode ? '#334155' : '#E6EAE4',
+        ['--auth-text-muted' as string]: isDarkMode ? '#94A3B8' : '#626962',
       }}
     >
       {/* Top Bar with Minimalist Brand & Theme Switcher */}
       <div className="w-full max-w-7xl mx-auto px-6 py-5 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#246B38] to-[#A6F4A5] p-0.5 shadow-md shadow-[#A6F4A5]/10 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 via-sky-500 to-cyan-400 p-0.5 shadow-md shadow-sky-500/25 flex items-center justify-center">
             <div
-              className={`w-full h-full rounded-[10px] flex items-center justify-center ${
-                isDarkMode ? 'bg-[#080A08]' : 'bg-white'
+              className={`w-full h-full rounded-[10px] flex items-center justify-center p-1 ${
+                isDarkMode ? 'bg-[#080E18]' : 'bg-white'
               }`}
             >
-              <Sparkles className="w-4 h-4 text-[#A6F4A5]" />
+              <svg
+                viewBox="0 0 36 36"
+                fill="none"
+                className="w-full h-full text-sky-400 drop-shadow-[0_0_6px_rgba(56,189,248,0.5)]"
+              >
+                <polygon
+                  points="18,3 32,10.5 32,25.5 18,33 4,25.5 4,10.5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="rgba(56, 189, 248, 0.12)"
+                />
+                <line x1="18" y1="3" x2="18" y2="18" stroke="#38bdf8" strokeWidth="1.8" />
+                <line x1="32" y1="25.5" x2="18" y2="18" stroke="#38bdf8" strokeWidth="1.8" />
+                <line x1="4" y1="25.5" x2="18" y2="18" stroke="#38bdf8" strokeWidth="1.8" />
+                <circle cx="18" cy="18" r="3" fill="#38bdf8" />
+                <circle cx="18" cy="3" r="1.8" fill="#7dd3fc" />
+                <circle cx="32" cy="10.5" r="1.8" fill="#7dd3fc" />
+                <circle cx="32" cy="25.5" r="1.8" fill="#7dd3fc" />
+                <circle cx="18" cy="33" r="1.8" fill="#7dd3fc" />
+                <circle cx="4" cy="25.5" r="1.8" fill="#7dd3fc" />
+                <circle cx="4" cy="10.5" r="1.8" fill="#7dd3fc" />
+              </svg>
             </div>
           </div>
-          <span className="font-bold text-base tracking-tight font-heading">
-            OpenScreens
-          </span>
-          <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] uppercase font-mono font-bold rounded-full bg-[#A6F4A5]/15 text-[#246B38] dark:text-[#A6F4A5] border border-[#A6F4A5]/30">
-            Client-Side Colony
-          </span>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-base tracking-tight font-heading">
+                OpenScreens
+              </span>
+              <span className="hidden sm:inline-block px-2 py-0.5 text-[9px] uppercase font-mono font-bold rounded-full bg-[#38BDF8]/15 text-[#0284C7] dark:text-[#38BDF8] border border-[#38BDF8]/30">
+                PROD v1.0
+              </span>
+            </div>
+            <div className="text-[9.5px] text-sky-600 dark:text-sky-400 font-mono tracking-wider font-semibold uppercase -mt-0.5">
+              Autonomous Multi-Model AI Colony
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Direct Guest Access Shortcut */}
           <button
             onClick={loginAsGuest}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--auth-text-muted)] hover:text-white hover:bg-[#A6F4A5]/10 border border-transparent hover:border-[#A6F4A5]/30 transition-all"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--auth-text-muted)] hover:text-white hover:bg-[#38BDF8]/10 border border-transparent hover:border-[#38BDF8]/30 transition-all"
             title="Continue instantly without creating an account"
           >
-            <Cpu className="w-3.5 h-3.5 text-[#A6F4A5]" />
+            <Cpu className="w-3.5 h-3.5 text-[#38BDF8]" />
             <span>Direct Guest Mode</span>
           </button>
 
@@ -339,26 +367,26 @@ export const AuthPage: React.FC = () => {
         {/* LEFT SIDE: Generative Ambient Geometric Artwork */}
         <div className="hidden lg:flex lg:col-span-6 flex-col justify-between h-full min-h-[580px] p-8 rounded-3xl bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] relative overflow-hidden shadow-2xl">
           {/* Subtle Ambient Radial Glow */}
-          <div className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full bg-[#A6F4A5]/10 blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-10 right-10 w-64 h-64 rounded-full bg-[#246B38]/20 blur-[80px] pointer-events-none" />
+          <div className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full bg-[#38BDF8]/10 blur-[100px] pointer-events-none" />
+          <div className="absolute bottom-10 right-10 w-64 h-64 rounded-full bg-[#0284C7]/20 blur-[80px] pointer-events-none" />
 
           {/* Generative Interactive SVG Art */}
           <div className="relative z-10 w-full flex-1 flex flex-col justify-center items-center py-6">
             <svg
-              className="w-full max-w-md h-72 text-[#A6F4A5]"
+              className="w-full max-w-md h-72 text-[#38BDF8]"
               viewBox="0 0 400 300"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
               <defs>
                 <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#A6F4A5" stopOpacity="0.8" />
-                  <stop offset="50%" stopColor="#8DEB8B" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#246B38" stopOpacity="0.1" />
+                  <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.8" />
+                  <stop offset="50%" stopColor="#7DD3FC" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#0284C7" stopOpacity="0.1" />
                 </linearGradient>
                 <linearGradient id="waveGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#246B38" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#A6F4A5" stopOpacity="0.9" />
+                  <stop offset="0%" stopColor="#0284C7" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.9" />
                 </linearGradient>
               </defs>
 
@@ -377,7 +405,7 @@ export const AuthPage: React.FC = () => {
               />
               <path
                 d="M 40 140 C 110 210, 170 90, 240 170 C 300 230, 350 110, 370 170"
-                stroke="#A6F4A5"
+                stroke="#38BDF8"
                 strokeWidth="1.2"
                 strokeDasharray="2 4"
                 opacity="0.6"
@@ -385,22 +413,22 @@ export const AuthPage: React.FC = () => {
               />
 
               {/* Node Satellites / Bot Indicators */}
-              <circle cx="200" cy="150" r="7" fill="#A6F4A5" className="animate-ping" style={{ animationDuration: '3s' }} />
-              <circle cx="200" cy="150" r="5" fill="#A6F4A5" />
-              <circle cx="115" cy="90" r="4" fill="#8DEB8B" />
-              <circle cx="285" cy="210" r="4.5" fill="#A6F4A5" />
-              <circle cx="230" cy="130" r="3.5" fill="#246B38" />
+              <circle cx="200" cy="150" r="7" fill="#38BDF8" className="animate-ping" style={{ animationDuration: '3s' }} />
+              <circle cx="200" cy="150" r="5" fill="#38BDF8" />
+              <circle cx="115" cy="90" r="4" fill="#7DD3FC" />
+              <circle cx="285" cy="210" r="4.5" fill="#38BDF8" />
+              <circle cx="230" cy="130" r="3.5" fill="#0284C7" />
 
               {/* Transit Rays */}
-              <line x1="200" y1="150" x2="115" y2="90" stroke="#A6F4A5" strokeWidth="0.8" opacity="0.4" />
-              <line x1="200" y1="150" x2="285" y2="210" stroke="#A6F4A5" strokeWidth="0.8" opacity="0.4" />
+              <line x1="200" y1="150" x2="115" y2="90" stroke="#38BDF8" strokeWidth="0.8" opacity="0.4" />
+              <line x1="200" y1="150" x2="285" y2="210" stroke="#38BDF8" strokeWidth="0.8" opacity="0.4" />
             </svg>
           </div>
 
           {/* Typography & Value Proposition */}
           <div className="relative z-10 space-y-3">
-            <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider text-[#A6F4A5]">
-              <ShieldCheck className="w-4 h-4 text-[#A6F4A5]" />
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-wider text-[#38BDF8]">
+              <ShieldCheck className="w-4 h-4 text-[#38BDF8]" />
               <span>Zero-Telemetry Client Security</span>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight font-heading leading-tight text-white">
@@ -482,9 +510,9 @@ export const AuthPage: React.FC = () => {
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-5 p-3 rounded-xl bg-[#A6F4A5]/15 border border-[#A6F4A5]/40 text-xs text-[#246B38] dark:text-[#A6F4A5] flex items-start gap-2.5"
+                className="mb-5 p-3 rounded-xl bg-[#38BDF8]/15 border border-[#38BDF8]/40 text-xs text-[#0284C7] dark:text-[#38BDF8] flex items-start gap-2.5"
               >
-                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#A6F4A5]" />
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-[#38BDF8]" />
                 <span>{statusMessage}</span>
               </motion.div>
             )}
@@ -521,7 +549,7 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
@@ -537,7 +565,7 @@ export const AuthPage: React.FC = () => {
                         setMode('forgot');
                         setErrorMessage(null);
                       }}
-                      className="text-[11px] text-[#246B38] dark:text-[#A6F4A5] hover:underline"
+                      className="text-[11px] text-[#0284C7] dark:text-[#38BDF8] hover:underline"
                     >
                       Forgot password?
                     </button>
@@ -550,7 +578,7 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-10 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-10 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                     <button
                       type="button"
@@ -569,7 +597,7 @@ export const AuthPage: React.FC = () => {
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-[var(--auth-border)] text-[#246B38] focus:ring-[#A6F4A5]"
+                      className="w-4 h-4 rounded border-[var(--auth-border)] text-[#0284C7] focus:ring-[#38BDF8]"
                     />
                     <span className="text-xs text-[var(--auth-text-muted)]">
                       Remember me on this browser
@@ -581,7 +609,7 @@ export const AuthPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting || lockoutRemaining > 0}
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#A6F4A5] hover:bg-[#8DEB8B] text-[#080A08] shadow-md shadow-[#A6F4A5]/15 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#38BDF8] hover:bg-[#7DD3FC] text-[#080E18] shadow-md shadow-[#38BDF8]/15 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <RotateCw className="w-4 h-4 animate-spin" />
@@ -608,7 +636,7 @@ export const AuthPage: React.FC = () => {
                     onClick={loginAsGuest}
                     className="w-full mt-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-[var(--auth-subtle-surface)] hover:bg-[var(--auth-border)] text-[var(--text-main)] border border-[var(--auth-border)] transition-all flex items-center justify-center gap-2"
                   >
-                    <Cpu className="w-4 h-4 text-[#A6F4A5]" />
+                    <Cpu className="w-4 h-4 text-[#38BDF8]" />
                     <span>Direct Local Colony Mode (Guest)</span>
                   </button>
                 </div>
@@ -639,7 +667,7 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Alex Turing"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
@@ -656,7 +684,7 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
@@ -681,7 +709,7 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="At least 8 characters"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-10 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-10 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                     <button
                       type="button"
@@ -712,16 +740,16 @@ export const AuthPage: React.FC = () => {
 
                       {/* Password Requirements Checklist */}
                       <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[var(--auth-text-muted)] pt-1">
-                        <span className={passwordEvaluation.hasLength ? 'text-emerald-500 font-bold' : ''}>
+                        <span className={passwordEvaluation.hasLength ? 'text-sky-500 font-bold' : ''}>
                           ✓ 8+ Chars
                         </span>
-                        <span className={passwordEvaluation.hasUpper && passwordEvaluation.hasLower ? 'text-emerald-500 font-bold' : ''}>
+                        <span className={passwordEvaluation.hasUpper && passwordEvaluation.hasLower ? 'text-sky-500 font-bold' : ''}>
                           ✓ Upper & Lower
                         </span>
-                        <span className={passwordEvaluation.hasNumber ? 'text-emerald-500 font-bold' : ''}>
+                        <span className={passwordEvaluation.hasNumber ? 'text-sky-500 font-bold' : ''}>
                           ✓ Number
                         </span>
-                        <span className={passwordEvaluation.hasSpecial ? 'text-emerald-500 font-bold' : ''}>
+                        <span className={passwordEvaluation.hasSpecial ? 'text-sky-500 font-bold' : ''}>
                           ✓ Symbol
                         </span>
                       </div>
@@ -741,7 +769,7 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Repeat master password"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                   </div>
                   {confirmPassword && password !== confirmPassword && (
@@ -752,7 +780,7 @@ export const AuthPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#A6F4A5] hover:bg-[#8DEB8B] text-[#080A08] shadow-md shadow-[#A6F4A5]/15 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#38BDF8] hover:bg-[#7DD3FC] text-[#080E18] shadow-md shadow-[#38BDF8]/15 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <RotateCw className="w-4 h-4 animate-spin" />
@@ -799,14 +827,14 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#A6F4A5] hover:bg-[#8DEB8B] text-[#080A08] shadow-md shadow-[#A6F4A5]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#38BDF8] hover:bg-[#7DD3FC] text-[#080E18] shadow-md shadow-[#38BDF8]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Send Recovery Code</span>
                   <ArrowRight className="w-4 h-4" />
@@ -816,7 +844,7 @@ export const AuthPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setMode('verify')}
-                    className="text-xs text-[#246B38] dark:text-[#A6F4A5] hover:underline font-medium"
+                    className="text-xs text-[#0284C7] dark:text-[#38BDF8] hover:underline font-medium"
                   >
                     Already have a 6-digit code? Enter code
                   </button>
@@ -858,7 +886,7 @@ export const AuthPage: React.FC = () => {
                       value={digit}
                       onChange={(e) => handleOtpChange(idx, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                      className="w-11 h-12 text-center text-lg font-mono font-bold rounded-xl bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] focus:ring-2 focus:ring-[#A6F4A5]/20 text-[var(--text-main)] focus:outline-none transition-all"
+                      className="w-11 h-12 text-center text-lg font-mono font-bold rounded-xl bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] focus:ring-2 focus:ring-[#38BDF8]/20 text-[var(--text-main)] focus:outline-none transition-all"
                     />
                   ))}
                 </div>
@@ -866,7 +894,7 @@ export const AuthPage: React.FC = () => {
                 <div className="flex items-center justify-between text-xs text-[var(--auth-text-muted)] pt-1">
                   <span>Didn't receive it?</span>
                   {resendCooldown > 0 ? (
-                    <span className="font-mono text-emerald-500">Resend in {resendCooldown}s</span>
+                    <span className="font-mono text-sky-500">Resend in {resendCooldown}s</span>
                   ) : (
                     <button
                       type="button"
@@ -874,7 +902,7 @@ export const AuthPage: React.FC = () => {
                         setResendCooldown(30);
                         showToast('New recovery code generated.', 'info');
                       }}
-                      className="text-[#246B38] dark:text-[#A6F4A5] font-semibold hover:underline"
+                      className="text-[#0284C7] dark:text-[#38BDF8] font-semibold hover:underline"
                     >
                       Resend Code
                     </button>
@@ -883,7 +911,7 @@ export const AuthPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#A6F4A5] hover:bg-[#8DEB8B] text-[#080A08] shadow-md shadow-[#A6F4A5]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#38BDF8] hover:bg-[#7DD3FC] text-[#080E18] shadow-md shadow-[#38BDF8]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Verify & Set New Password</span>
                   <ArrowRight className="w-4 h-4" />
@@ -915,7 +943,7 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="At least 8 characters"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-10 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-10 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                     <button
                       type="button"
@@ -939,7 +967,7 @@ export const AuthPage: React.FC = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Repeat new password"
                       required
-                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#A6F4A5] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
+                      className="w-full bg-[var(--auth-subtle-surface)] border border-[var(--auth-border)] focus:border-[#38BDF8] text-xs rounded-xl pl-10 pr-3.5 py-2.5 text-[var(--text-main)] placeholder-[var(--auth-text-muted)] focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
@@ -947,7 +975,7 @@ export const AuthPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#A6F4A5] hover:bg-[#8DEB8B] text-[#080A08] shadow-md shadow-[#A6F4A5]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs bg-[#38BDF8] hover:bg-[#7DD3FC] text-[#080E18] shadow-md shadow-[#38BDF8]/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <RotateCw className="w-4 h-4 animate-spin" />

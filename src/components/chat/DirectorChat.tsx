@@ -68,11 +68,11 @@ export const DirectorChat: React.FC = () => {
       <div className="pb-2 border-b border-[var(--border-subtle)] mb-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <MessageSquare className="w-4 h-4 text-emerald-500 shrink-0" />
+            <MessageSquare className="w-4 h-4 text-sky-500 shrink-0" />
             <span className="text-xs font-bold text-[var(--text-main)] font-heading truncate">
               Director Chat
             </span>
-            <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-mono shrink-0">
+            <span className="text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 px-1.5 py-0.5 rounded-full font-mono shrink-0">
               {filteredMessages.length} msgs
             </span>
           </div>
@@ -87,7 +87,7 @@ export const DirectorChat: React.FC = () => {
           <select
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            className="flex-1 min-w-0 bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[11px] rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-emerald-500 font-medium cursor-pointer truncate"
+            className="flex-1 min-w-0 bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[11px] rounded-lg px-2 py-1 text-[var(--text-main)] focus:outline-none focus:border-sky-500 font-medium cursor-pointer truncate"
           >
             <option value="all">Broadcast to All Bots</option>
             {projectBots.map((b) => (
@@ -123,28 +123,28 @@ export const DirectorChat: React.FC = () => {
                 className={`flex gap-2 text-xs ${isUser ? 'justify-end' : 'justify-start'}`}
               >
                 {!isUser && (
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 text-emerald-500 text-[10px] font-bold">
+                  <div className="w-6 h-6 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center shrink-0 text-sky-500 text-[10px] font-bold">
                     {botData?.name?.slice(0, 1) || 'B'}
                   </div>
                 )}
                 <div
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs shadow-sm ${
                     isUser
-                      ? 'bg-emerald-600 text-white rounded-tr-none'
+                      ? 'bg-sky-600 text-white rounded-tr-none'
                       : 'bg-[var(--bg-panel)] text-[var(--text-main)] border border-[var(--border-subtle)] rounded-tl-none'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-0.5">
                     <span
                       className={`text-[10px] font-bold ${
-                        isUser ? 'text-emerald-100' : 'text-emerald-500 dark:text-emerald-400'
+                        isUser ? 'text-sky-100' : 'text-sky-500 dark:text-sky-400'
                       }`}
                     >
                       {ev.botName}
                     </span>
                     <span
                       className={`text-[9px] font-mono ${
-                        isUser ? 'text-emerald-200' : 'text-[var(--text-faint)]'
+                        isUser ? 'text-sky-200' : 'text-[var(--text-faint)]'
                       }`}
                     >
                       {new Date(ev.timestamp).toLocaleTimeString([], {
@@ -156,7 +156,7 @@ export const DirectorChat: React.FC = () => {
                   <p className="leading-relaxed whitespace-pre-wrap break-words">{ev.summary}</p>
                 </div>
                 {isUser && (
-                  <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
+                  <div className="w-6 h-6 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 text-[10px] font-bold">
                     You
                   </div>
                 )}
@@ -171,7 +171,7 @@ export const DirectorChat: React.FC = () => {
         <button
           type="button"
           onClick={() => handleQuickDirective('Approved! Looks fantastic, proceed with the next task.')}
-          className="text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full whitespace-nowrap transition-colors flex items-center gap-1 font-medium"
+          className="text-[10px] bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full whitespace-nowrap transition-colors flex items-center gap-1 font-medium"
         >
           <ThumbsUp className="w-2.5 h-2.5" /> Approve
         </button>
@@ -202,11 +202,11 @@ export const DirectorChat: React.FC = () => {
           }
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="flex-1 bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-emerald-500"
+          className="flex-1 bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-xs rounded-xl px-3 py-2 text-[var(--text-main)] placeholder-[var(--text-faint)] focus:outline-none focus:border-sky-500"
         />
         <button
           type="submit"
-          className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors shadow-md shadow-emerald-600/20 flex items-center justify-center"
+          className="p-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-colors shadow-md shadow-sky-600/20 flex items-center justify-center"
           title="Send message"
         >
           <Send className="w-4 h-4" />

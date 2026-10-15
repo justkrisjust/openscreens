@@ -17,7 +17,7 @@ export const LockedFeatureModal: React.FC = () => {
           <X className="w-5 h-5" />
         </button>
 
-        <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center mb-4">
+        <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-500 flex items-center justify-center mb-4">
           <Lock className="w-6 h-6" />
         </div>
 
@@ -32,14 +32,14 @@ export const LockedFeatureModal: React.FC = () => {
         </p>
 
         <div className="p-3 bg-[var(--bg-panel)] rounded-xl border border-[var(--border-subtle)] text-xs text-[var(--text-muted)] flex items-center gap-2 mb-6">
-          <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+          <Sparkles className="w-4 h-4 text-sky-500 shrink-0" />
           <span>Currently in Prototype Mode: Focus on local multi-bot coordination and the Memory Box!</span>
         </div>
 
         <div className="flex justify-end">
           <button
             onClick={hideLockedFeature}
-            className="px-4 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors shadow-sm"
+            className="px-4 py-2 text-sm font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-xl transition-colors shadow-sm"
           >
             Understood
           </button>
