@@ -89,16 +89,10 @@ export const OfficeCanvas: React.FC = () => {
               {activeProject ? activeProject.status.toUpperCase() : 'STANDBY • NO PROJECT'}
             </span>
             {activeProject ? (
-              projectBots.some((b) => b.provider !== 'mock') ? (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-sky-500/10 text-sky-500 dark:text-sky-400 border border-sky-500/20 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-                  Live Real AI Mode
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-sky-500/10 text-sky-500 dark:text-sky-400 border border-sky-500/20">
-                  Demo Mode (Zero Cost)
-                </span>
-              )
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-sky-500/10 text-sky-500 dark:text-sky-400 border border-sky-500/20 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                Live Real AI Colony
+              </span>
             ) : (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20">
                 All Bots Chilling

@@ -26,7 +26,6 @@ export const BotListView: React.FC = () => {
     xai: <span className="text-zinc-400 font-mono text-[10px]">xAI</span>,
     mistral: <span className="text-orange-500 font-mono text-[10px]">Mistral</span>,
     ollama: <span className="text-cyan-400 font-mono text-[10px]">Ollama</span>,
-    mock: <span className="text-violet-500 font-mono text-[10px]">Demo</span>,
   };
 
   return (

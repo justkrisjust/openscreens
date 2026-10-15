@@ -20,7 +20,6 @@ interface AuthState {
   // Account Authentication State
   isAuthenticated: boolean;
   currentUser: AuthUser | null;
-  isGuest: boolean;
   failedAttempts: number;
   lockoutUntil: number | null;
 
@@ -35,7 +34,6 @@ interface AuthState {
   restoreSession: () => Promise<void>;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
-  loginAsGuest: () => void;
   logout: () => void;
   resetPassword: (email: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
 
@@ -59,15 +57,12 @@ const LOCKOUT_DURATION_MS = 30000; // 30 seconds
 export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   currentUser: null,
-  isGuest: false,
   failedAttempts: 0,
   lockoutUntil: null,
 
   isUnlocked: false,
   passphrase: null,
-  sessionKeys: {
-    mock: 'mock-local-token',
-  },
+  sessionKeys: {},
   proxyUrls: {},
   hasSavedKeys: false,
 
@@ -76,14 +71,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // 1. Check temporary session storage first
       const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored) as { user: AuthUser; isGuest: boolean };
-        if (parsed.user) {
+        const parsed = JSON.parse(stored) as { user: AuthUser; isGuest?: boolean };
+        // Purge any legacy guest sessions
+        if (parsed.user && !parsed.isGuest && !parsed.user.id.startsWith('guest-')) {
           set({
             isAuthenticated: true,
             currentUser: parsed.user,
-            isGuest: parsed.isGuest || false,
           });
           return;
+        } else {
+          sessionStorage.removeItem(SESSION_STORAGE_KEY);
         }
       }
 
@@ -95,12 +92,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const authUser: AuthUser = { id: user.id, name: user.name, email: user.email };
           sessionStorage.setItem(
             SESSION_STORAGE_KEY,
-            JSON.stringify({ user: authUser, isGuest: false })
+            JSON.stringify({ user: authUser })
           );
           set({
             isAuthenticated: true,
             currentUser: authUser,
-            isGuest: false,
           });
           return;
         }
@@ -160,7 +156,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const authUser: AuthUser = { id: user.id, name: user.name, email: user.email };
       sessionStorage.setItem(
         SESSION_STORAGE_KEY,
-        JSON.stringify({ user: authUser, isGuest: false })
+        JSON.stringify({ user: authUser })
       );
 
       if (rememberMe) {
@@ -172,7 +168,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         isAuthenticated: true,
         currentUser: authUser,
-        isGuest: false,
         failedAttempts: 0,
         lockoutUntil: null,
       });
@@ -220,7 +215,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const authUser: AuthUser = { id: newUser.id, name: newUser.name, email: newUser.email };
       sessionStorage.setItem(
         SESSION_STORAGE_KEY,
-        JSON.stringify({ user: authUser, isGuest: false })
+        JSON.stringify({ user: authUser })
       );
 
       if (rememberMe) {
@@ -230,7 +225,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         isAuthenticated: true,
         currentUser: authUser,
-        isGuest: false,
         failedAttempts: 0,
         lockoutUntil: null,
       });
@@ -242,35 +236,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  loginAsGuest: () => {
-    const guestUser: AuthUser = {
-      id: 'guest-director',
-      name: 'Colony Director (Guest)',
-      email: 'director@local.colony',
-    };
-    sessionStorage.setItem(
-      SESSION_STORAGE_KEY,
-      JSON.stringify({ user: guestUser, isGuest: true })
-    );
-    set({
-      isAuthenticated: true,
-      currentUser: guestUser,
-      isGuest: true,
-      failedAttempts: 0,
-      lockoutUntil: null,
-    });
-  },
-
   logout: () => {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
     localStorage.removeItem(REMEMBER_STORAGE_KEY);
     set({
       isAuthenticated: false,
       currentUser: null,
-      isGuest: false,
       isUnlocked: false,
       passphrase: null,
-      sessionKeys: { mock: 'mock-local-token' },
+      sessionKeys: {},
     });
   },
 
@@ -303,9 +277,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   unlockVault: async (passphrase: string) => {
     try {
       const records = await getAllEncryptedKeys();
-      const decryptedKeys: Partial<Record<ProviderId, string>> = {
-        mock: 'mock-local-token',
-      };
+      const decryptedKeys: Partial<Record<ProviderId, string>> = {};
 
       for (const rec of records) {
         try {
@@ -332,7 +304,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       isUnlocked: false,
       passphrase: null,
-      sessionKeys: { mock: 'mock-local-token' },
+      sessionKeys: {},
     });
   },
 
@@ -344,7 +316,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       },
     }));
 
-    if (persistEncrypted && provider !== 'mock') {
+    if (persistEncrypted) {
       const activePassphrase = explicitPassphrase || get().passphrase;
       if (!activePassphrase) {
         throw new Error('Please enter a master passphrase above to encrypt and save your key.');
@@ -363,7 +335,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   getKey: (provider: ProviderId) => {
-    if (provider === 'mock') return 'mock-local-token';
     return get().sessionKeys[provider];
   },
 
@@ -398,10 +369,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       isAuthenticated: false,
       currentUser: null,
-      isGuest: false,
       isUnlocked: false,
       passphrase: null,
-      sessionKeys: { mock: 'mock-local-token' },
+      sessionKeys: {},
       proxyUrls: {},
       hasSavedKeys: false,
     });

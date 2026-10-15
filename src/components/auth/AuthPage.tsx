@@ -75,7 +75,7 @@ function evaluatePassword(pwd: string): PasswordScore {
 }
 
 export const AuthPage: React.FC = () => {
-  const { login, register, loginAsGuest, resetPassword, lockoutUntil } = useAuthStore();
+  const { login, register, resetPassword, lockoutUntil } = useAuthStore();
   const { isDarkMode, toggleTheme, showToast } = useUIStore();
 
   const [mode, setMode] = useState<AuthViewMode>('signin');
@@ -341,16 +341,6 @@ export const AuthPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Direct Guest Access Shortcut */}
-          <button
-            onClick={loginAsGuest}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--auth-text-muted)] hover:text-white hover:bg-[#38BDF8]/10 border border-transparent hover:border-[#38BDF8]/30 transition-all"
-            title="Continue instantly without creating an account"
-          >
-            <Cpu className="w-3.5 h-3.5 text-[#38BDF8]" />
-            <span>Direct Guest Mode</span>
-          </button>
-
           {/* Theme Switcher */}
           <button
             onClick={toggleTheme}
@@ -621,25 +611,6 @@ export const AuthPage: React.FC = () => {
                   )}
                 </button>
 
-                {/* Divider & Guest Access Option */}
-                <div className="pt-3">
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-[var(--auth-border)]"></div>
-                    <span className="flex-shrink mx-3 text-[10px] uppercase font-mono text-[var(--auth-text-muted)]">
-                      or quick test
-                    </span>
-                    <div className="flex-grow border-t border-[var(--auth-border)]"></div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={loginAsGuest}
-                    className="w-full mt-1 py-2.5 px-4 rounded-xl font-semibold text-xs bg-[var(--auth-subtle-surface)] hover:bg-[var(--auth-border)] text-[var(--text-main)] border border-[var(--auth-border)] transition-all flex items-center justify-center gap-2"
-                  >
-                    <Cpu className="w-4 h-4 text-[#38BDF8]" />
-                    <span>Direct Local Colony Mode (Guest)</span>
-                  </button>
-                </div>
               </form>
             )}
 

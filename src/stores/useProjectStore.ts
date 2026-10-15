@@ -116,10 +116,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   loadProjects: async () => {
     try {
       const storedProjects = await getAllProjects();
-      const realProjects = storedProjects.filter((p) => !p.id.startsWith('demo-'));
+      const isDemoProject = (p: Project) => {
+        if (!p) return true;
+        if (p.id.startsWith('demo-') || p.id.startsWith('test-')) return true;
+        const nameLower = (p.name || '').toLowerCase();
+        if (nameLower.includes('demo') || nameLower.includes('crm refactor')) return true;
+        return false;
+      };
+
+      const realProjects = storedProjects.filter((p) => !isDemoProject(p));
       if (storedProjects.length !== realProjects.length) {
         for (const p of storedProjects) {
-          if (p.id.startsWith('demo-')) {
+          if (isDemoProject(p)) {
             await deleteProject(p.id).catch(() => {});
           }
         }

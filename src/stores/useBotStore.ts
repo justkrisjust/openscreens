@@ -32,11 +32,20 @@ export const useBotStore = create<BotState>((set, get) => ({
   loadBots: async () => {
     try {
       const storedBots = await getAllBots();
-      // Filter out any legacy demo bots
-      const realBots = storedBots.filter((b) => !b.id.startsWith('demo-'));
+      const isDemoBot = (b: Bot) => {
+        if (!b) return true;
+        if (b.provider === 'mock') return true;
+        if (b.id.startsWith('demo-') || b.id.startsWith('test-')) return true;
+        const nameLower = (b.name || '').toLowerCase().trim();
+        if (['larry', 'ada', 'linus', 'grace'].includes(nameLower)) return true;
+        return false;
+      };
+
+      // Filter and delete any demo or mock bots completely
+      const realBots = storedBots.filter((b) => !isDemoBot(b));
       if (storedBots.length !== realBots.length) {
         for (const b of storedBots) {
-          if (b.id.startsWith('demo-')) {
+          if (isDemoBot(b)) {
             await deleteBot(b.id).catch(() => {});
           }
         }
@@ -49,6 +58,10 @@ export const useBotStore = create<BotState>((set, get) => ({
   },
 
   createBot: async (botData) => {
+    if (botData.provider === 'mock') {
+      throw new Error('Demo mode is disabled. Please select a real AI provider.');
+    }
+
     const currentBots = get().bots;
     if (currentBots.length >= 12) {
       throw new Error('Maximum of 12 bots allowed in project.');

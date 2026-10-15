@@ -94,7 +94,7 @@ export const BotSetupModal: React.FC = () => {
       setIsLoadingModels(true);
       try {
         const adapter = getAdapter(provider);
-        const apiKey = getKey(provider) || (provider === 'mock' ? 'mock-key' : '');
+        const apiKey = getKey(provider) || '';
         const proxyUrl = getProxyUrl(provider);
 
         const fetched = await adapter.fetchModels(apiKey, proxyUrl);
@@ -343,7 +343,7 @@ export const BotSetupModal: React.FC = () => {
               ))}
             </div>
 
-            {!getKey(provider) && provider !== 'mock' && (
+            {!getKey(provider) && provider !== 'ollama' && (
               <div className="mt-2.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-xl text-[11px] text-amber-500 flex items-center justify-between">
                 <span>⚠️ No API key set for {getAdapter(provider).name} yet.</span>
                 <button

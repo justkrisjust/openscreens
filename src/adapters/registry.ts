@@ -21,13 +21,13 @@ const ADAPTERS: Record<ProviderId, ProviderAdapter> = {
 export function getAdapter(provider: ProviderId): ProviderAdapter {
   const adapter = ADAPTERS[provider];
   if (!adapter) {
-    throw new Error(`Unknown provider adapter: "${provider}". Defaulting to mock demo adapter.`);
+    throw new Error(`Unknown provider adapter: "${provider}". Please configure a valid AI provider.`);
   }
   return adapter;
 }
 
 export function getAllAdapters(): ProviderAdapter[] {
-  return Object.values(ADAPTERS);
+  return [geminiAdapter, anthropicAdapter, openaiAdapter, ollamaAdapter, xaiAdapter, mistralAdapter];
 }
 
 export function getRealProviderAdapters(): ProviderAdapter[] {
