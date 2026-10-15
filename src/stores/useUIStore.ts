@@ -9,6 +9,7 @@ interface UIState {
   isNewBotModalOpen: boolean;
   editingBotId: string | null;
   isNewProjectModalOpen: boolean;
+  isGuideModalOpen: boolean;
   lockedFeatureNotice: string | null;
   toast: { message: string; type: 'success' | 'info' | 'warn' | 'error' } | null;
 
@@ -21,6 +22,9 @@ interface UIState {
   openEditBotModal: (botId: string) => void;
   closeBotModal: () => void;
   setNewProjectModalOpen: (open: boolean) => void;
+  setGuideModalOpen: (open: boolean) => void;
+  openGuideModal: () => void;
+  closeGuideModal: () => void;
   showLockedFeature: (featureName: string) => void;
   hideLockedFeature: () => void;
   showToast: (message: string, type?: 'success' | 'info' | 'warn' | 'error') => void;
@@ -45,6 +49,7 @@ export const useUIStore = create<UIState>((set) => ({
   isNewBotModalOpen: false,
   editingBotId: null,
   isNewProjectModalOpen: false,
+  isGuideModalOpen: false,
   lockedFeatureNotice: null,
   toast: null,
 
@@ -70,6 +75,9 @@ export const useUIStore = create<UIState>((set) => ({
   openEditBotModal: (botId: string) => set({ isNewBotModalOpen: true, editingBotId: botId }),
   closeBotModal: () => set({ isNewBotModalOpen: false, editingBotId: null }),
   setNewProjectModalOpen: (open) => set({ isNewProjectModalOpen: open }),
+  setGuideModalOpen: (open) => set({ isGuideModalOpen: open }),
+  openGuideModal: () => set({ isGuideModalOpen: true }),
+  closeGuideModal: () => set({ isGuideModalOpen: false }),
 
   showLockedFeature: (featureName) => set({ lockedFeatureNotice: featureName }),
   hideLockedFeature: () => set({ lockedFeatureNotice: null }),

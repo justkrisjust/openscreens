@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   BookOpen,
   X,
@@ -16,10 +17,11 @@ import {
   Terminal,
   Zap,
 } from 'lucide-react';
+import { useUIStore } from '../../stores/useUIStore';
 
-interface UserGuideModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+export interface UserGuideModalProps {
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 interface GuideSection {
@@ -161,10 +163,37 @@ const GUIDE_SECTIONS: GuideSection[] = [
   },
 ];
 
-export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
+export const UserGuideModal: React.FC<UserGuideModalProps> = ({
+  isOpen: propIsOpen,
+  onClose: propOnClose,
+}) => {
+  const { isGuideModalOpen, closeGuideModal } = useUIStore();
+  const isOpen = propIsOpen !== undefined ? propIsOpen : isGuideModalOpen;
+  const onClose = propOnClose || closeGuideModal;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeSectionId, setActiveSectionId] = useState<string>('core-workflow');
+
+  // Handle ESC key press and scroll locking
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -182,9 +211,22 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
   const activeSection =
     GUIDE_SECTIONS.find((s) => s.id === activeSectionId) || filteredSections[0] || GUIDE_SECTIONS[0];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl w-full max-w-4xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+  const modalElement = (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="OpenScreens Production Guide and Documentation"
+    >
+      <div
+        className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl sm:rounded-3xl w-full max-w-4xl max-h-[88vh] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -382,4 +424,10 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose 
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalElement, document.body);
+  }
+
+  return modalElement;
 };

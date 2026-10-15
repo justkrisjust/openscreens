@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Header } from './components/common/Header';
 import { WipeDataModal } from './components/common/WipeDataModal';
 import { LockedFeatureModal } from './components/common/LockedFeatureModal';
+import { UserGuideModal } from './components/common/UserGuideModal';
 import { Toast } from './components/common/Toast';
 import { OfficeCanvas } from './components/office/OfficeCanvas';
 import { BotListView } from './components/bots/BotListView';
@@ -65,6 +66,7 @@ export const App: React.FC = () => {
       <BotSetupModal />
       <WipeDataModal />
       <LockedFeatureModal />
+      <UserGuideModal />
       <Toast />
     </div>
   );

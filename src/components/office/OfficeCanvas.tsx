@@ -19,13 +19,11 @@ import { MemoryBox } from '../memory/MemoryBox';
 import { EventFeed } from './EventFeed';
 import { DirectorChat } from '../chat/DirectorChat';
 import { VirtualOfficeFloor } from './VirtualOfficeFloor';
-import { UserGuideModal } from '../common/UserGuideModal';
 import { BookOpen } from 'lucide-react';
 
 export const OfficeCanvas: React.FC = () => {
   const [mobileSection, setMobileSection] = useState<'floor' | 'chat' | 'memory' | 'feed'>('floor');
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Responsive check to ensure exactly one VirtualOfficeFloor instance is ever mounted
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
@@ -53,7 +51,7 @@ export const OfficeCanvas: React.FC = () => {
   } = useProjectStore();
 
   const { bots } = useBotStore();
-  const { setActiveView } = useUIStore();
+  const { setActiveView, openGuideModal } = useUIStore();
 
   // Find bots belonging to this project (or all bots in standby)
   const projectBots = activeProject
@@ -178,8 +176,8 @@ export const OfficeCanvas: React.FC = () => {
 
             {/* Documentation & Guide button */}
             <button
-              onClick={() => setIsGuideOpen(true)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all shadow-sm"
+              onClick={openGuideModal}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all shadow-sm cursor-pointer"
               title="Documentation & Production Guide"
             >
               <BookOpen className="w-3.5 h-3.5 text-sky-500" />
@@ -330,9 +328,6 @@ export const OfficeCanvas: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Production User Guide & Documentation Modal */}
-      <UserGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
     </div>
   );
 };

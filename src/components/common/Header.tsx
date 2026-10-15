@@ -20,11 +20,9 @@ import {
 import { useUIStore } from '../../stores/useUIStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useProjectStore } from '../../stores/useProjectStore';
-import { UserGuideModal } from './UserGuideModal';
 
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
 
   const {
     activeView,
@@ -33,6 +31,7 @@ export const Header: React.FC = () => {
     toggleTheme,
     setWipeDataModalOpen,
     showLockedFeature,
+    openGuideModal,
   } = useUIStore();
 
   const { isUnlocked, hasSavedKeys, isAuthenticated, currentUser, logout } = useAuthStore();
@@ -186,8 +185,8 @@ export const Header: React.FC = () => {
         <div className="hidden md:flex items-center gap-2 shrink-0">
           {/* Documentation & Guide Button */}
           <button
-            onClick={() => setGuideOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all shadow-sm shrink-0"
+            onClick={openGuideModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all shadow-sm shrink-0 cursor-pointer"
             title="Documentation & Production Guide"
           >
             <BookOpen className="w-3.5 h-3.5 text-sky-500" />
@@ -409,10 +408,10 @@ export const Header: React.FC = () => {
 
           <button
             onClick={() => {
-              setGuideOpen(true);
+              openGuideModal();
               setMobileMenuOpen(false);
             }}
-            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all"
+            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition-all cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <BookOpen className="w-3.5 h-3.5 text-sky-500" />
@@ -478,9 +477,6 @@ export const Header: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Production User Guide & Documentation Modal */}
-      <UserGuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
     </header>
   );
 };
